@@ -1,0 +1,36 @@
+import { Suspense } from "react"
+import type { Metadata } from "next"
+import { notFound } from "next/navigation"
+import { SiteHeader } from "@/components/landing/site-header"
+import { OrderStatus } from "@/components/orders/order-status"
+import { toOrderView } from "@/components/orders/order-view"
+import { Spinner } from "@/components/ui/spinner"
+import { container } from "@/server/container"
+
+export const metadata: Metadata = { title: "Your order · Ndutas Kitchen" }
+
+export default function OrderPage({ params }: PageProps<"/orders/[id]">) {
+  return (
+    <div className="flex flex-1 flex-col">
+      <SiteHeader />
+      <main className="mx-auto w-full max-w-2xl px-4 py-10 md:px-6 md:py-14">
+        <Suspense
+          fallback={
+            <div className="flex h-80 items-center justify-center rounded-2xl border border-border bg-card">
+              <Spinner className="size-6 text-primary" />
+            </div>
+          }
+        >
+          <Order params={params} />
+        </Suspense>
+      </main>
+    </div>
+  )
+}
+
+async function Order({ params }: { params: PageProps<"/orders/[id]">["params"] }) {
+  const { id } = await params
+  const order = await container().getOrder(id)
+  if (!order) notFound()
+  return <OrderStatus order={toOrderView(order)} />
+}
