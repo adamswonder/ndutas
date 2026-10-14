@@ -1,8 +1,8 @@
 import type { PaymentGateway } from "@/core/application/ports"
 import type { Order } from "@/core/domain/order"
 
-// Send Money / Pochi la Biashara: Daraja can't collect or confirm these, so the customer
-// pays by hand and submits their M-Pesa code for the client to verify.
+// Pochi la Biashara: Daraja can't collect into or confirm Pochi payments, so the customer
+// pays by hand and the owner confirms the order in the back office.
 export class ManualMpesaGateway implements PaymentGateway {
   readonly method = "manual" as const
 
@@ -10,6 +10,10 @@ export class ManualMpesaGateway implements PaymentGateway {
     private readonly payTo: string,
     private readonly payToName: string
   ) {}
+
+  describe() {
+    return { method: this.method, payTo: this.payTo, payToName: this.payToName }
+  }
 
   async start(order: Order) {
     return {

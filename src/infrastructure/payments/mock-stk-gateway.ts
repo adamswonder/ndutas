@@ -11,6 +11,10 @@ export class MockStkGateway implements PaymentGateway {
     private readonly delayMs = 6000
   ) {}
 
+  describe() {
+    return { method: this.method }
+  }
+
   async start(order: Order) {
     const checkoutRequestId = `ws_CO_MOCK_${crypto.randomUUID()}`
     const result: StkResult = order.customer.phone.endsWith("000")
