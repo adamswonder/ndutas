@@ -3,16 +3,15 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { RotateCcwIcon } from "lucide-react"
-import { retryPaymentAction, submitManualPaymentAction } from "@/app/orders/[id]/actions"
+import { retryPaymentAction } from "@/app/orders/[id]/actions"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Spinner } from "@/components/ui/spinner"
-import { Label } from "@/components/ui/label"
+import { SpinnerCustom } from "@/components/spinner-custom"
 
 const POLL_MS = 3000
 const GIVE_UP_MS = 2 * 60 * 1000
 
-// Polls the status endpoint and refreshes the page as soon as the status changes.
+// Polls the status endpoint during an STK push and refreshes the page as soon as the
+// status changes. Pochi orders don't poll: the owner may not be online to confirm.
 export function StatusPoller({ orderId, status }: { orderId: string; status: string }) {
   const router = useRouter()
   const [timedOut, setTimedOut] = React.useState(false)
@@ -41,9 +40,7 @@ export function StatusPoller({ orderId, status }: { orderId: string; status: str
   }, [orderId, status, router, timedOut])
 
   if (!timedOut) {
-    return (
-      <p className="text-sm text-muted-foreground">Waiting for M-Pesa confirmation…</p>
-    )
+    return <p className="text-sm text-muted-foreground">Waiting for M-Pesa confirmation…</p>
   }
 
   return (
@@ -51,7 +48,7 @@ export function StatusPoller({ orderId, status }: { orderId: string; status: str
       <p>Still waiting. If you&apos;ve already paid, check again.</p>
       <Button
         variant="outline"
-        className="rounded-full"
+        className="cursor-pointer rounded-full"
         onClick={() => {
           setTimedOut(false)
           router.refresh()
@@ -71,7 +68,7 @@ export function RetryPaymentButton({ orderId }: { orderId: string }) {
   return (
     <div className="flex flex-col items-start gap-2">
       <Button
-        className="rounded-full"
+        className="cursor-pointer rounded-full"
         disabled={pending}
         onClick={() =>
           startTransition(async () => {
@@ -82,7 +79,7 @@ export function RetryPaymentButton({ orderId }: { orderId: string }) {
         }
       >
         {pending ? (
-          <Spinner data-icon="inline-start" />
+          <SpinnerCustom data-icon="inline-start" />
         ) : (
           <RotateCcwIcon data-icon="inline-start" />
         )}
@@ -93,48 +90,3 @@ export function RetryPaymentButton({ orderId }: { orderId: string }) {
   )
 }
 
-export function ManualCodeForm({ orderId }: { orderId: string }) {
-  const router = useRouter()
-  const [error, setError] = React.useState<string>()
-  const [pending, startTransition] = React.useTransition()
-
-  return (
-    <form
-      className="flex flex-col gap-2"
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault()
-        const code = String(new FormData(event.currentTarget).get("code") ?? "")
-        startTransition(async () => {
-          const res = await submitManualPaymentAction(orderId, code)
-          if (res.ok) router.refresh()
-          else setError(res.error)
-        })
-      }}
-    >
-      <Label htmlFor="code">M-Pesa confirmation code</Label>
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <Input
-          id="code"
-          name="code"
-          placeholder="e.g. SJK4H7Q2XZ"
-          autoComplete="off"
-          autoCapitalize="characters"
-          maxLength={12}
-          aria-invalid={!!error}
-          aria-describedby={error ? "code-error" : undefined}
-          className="h-11 font-price uppercase tracking-wider placeholder:font-sans placeholder:normal-case placeholder:tracking-normal"
-        />
-        <Button type="submit" className="h-11 rounded-full px-6" disabled={pending}>
-          {pending && <Spinner data-icon="inline-start" />}
-          Submit code
-        </Button>
-      </div>
-      {error && (
-        <p id="code-error" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-    </form>
-  )
-}

@@ -1,10 +1,12 @@
-import { CircleCheckIcon, CircleXIcon, WalletIcon, type LucideIcon } from "lucide-react"
+import { CircleCheckIcon, CircleXIcon, ClockIcon, type LucideIcon } from "lucide-react"
 import Link from "next/link"
+import { PochiSteps } from "@/components/checkout/pochi-steps"
 import { ProcessingState } from "@/components/processing-state"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { formatPrice } from "@/lib/format"
 import { cn } from "@/lib/utils"
-import { ManualCodeForm, RetryPaymentButton, StatusPoller } from "./order-controls"
+import { RetryPaymentButton, StatusPoller } from "./order-controls"
 import type { OrderView } from "./order-view"
 
 export function OrderStatus({ order }: { order: OrderView }) {
@@ -44,28 +46,62 @@ function StatusCard({ order }: { order: OrderView }) {
         </Panel>
       )
 
-    case "awaiting_verification":
+    case "awaiting_verification": {
+      // Pochi la Biashara: the order is placed; the owner confirms the payment by hand.
+      const pochi = order.instruction?.kind === "manual" ? order.instruction : null
       return (
-        <ProcessingState
-          title="We're confirming your payment"
-          description={
-            <>
-              Thanks, {order.customerName}. We&apos;re checking M-Pesa code{" "}
-              <span className="font-price font-medium tracking-wider text-foreground">
-                {order.manualCode}
-              </span>{" "}
-              for {total}. This page updates once it&apos;s confirmed.
-            </>
-          }
-        >
-          <StatusPoller orderId={order.id} status={order.status} />
-        </ProcessingState>
+        <Panel icon={CircleCheckIcon} tone="success" title="Order placed">
+          <p>
+            Thank you, {order.customerName}! We&apos;ve received your order. We&apos;ll confirm
+            it as soon as we see your Pochi la Biashara payment of {total}.
+          </p>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
+            <dt className="text-muted-foreground">Order</dt>
+            <dd className="font-price font-medium tabular-nums">{order.reference}</dd>
+            <dt className="text-muted-foreground">Amount</dt>
+            <dd className="font-price tabular-nums">{formatPrice(order.total)}</dd>
+            <dt className="text-muted-foreground">Phone</dt>
+            <dd className="font-price tabular-nums">{order.maskedPhone}</dd>
+            <dt className="text-muted-foreground">Status</dt>
+            <dd>
+              {/* No live polling: the owner may not be online, so the order simply stays
+                  Pending until they confirm it in the back office. */}
+              <Badge variant="secondary" className="gap-1.5">
+                <ClockIcon className="size-3" />
+                Pending
+              </Badge>
+            </dd>
+          </dl>
+          {pochi && (
+            <details className="rounded-xl border border-border">
+              <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
+                Haven&apos;t paid yet? See how to pay
+              </summary>
+              <div className="px-4 pb-4">
+                <PochiSteps
+                  payTo={pochi.payTo}
+                  payToName={pochi.payToName}
+                  amount={pochi.amount}
+                  payFrom={order.maskedPhone}
+                />
+              </div>
+            </details>
+          )}
+          <Button asChild variant="outline" className="self-start rounded-full">
+            <Link href="/#menu">Back to menu</Link>
+          </Button>
+        </Panel>
       )
+    }
 
     case "payment_failed":
     case "rejected":
       return (
-        <Panel icon={CircleXIcon} tone="error" title="Payment didn't go through">
+        <Panel
+          icon={CircleXIcon}
+          tone="error"
+          title={order.status === "rejected" ? "We couldn't confirm your payment" : "Payment didn't go through"}
+        >
           <p>{order.failureReason ?? "The payment was not completed."}</p>
           <p className="text-sm text-muted-foreground">
             Your order is saved. You can try paying again.
@@ -75,31 +111,9 @@ function StatusCard({ order }: { order: OrderView }) {
       )
 
     case "pending_payment":
-      if (order.instruction?.kind === "manual") {
-        const { payTo, payToName, reference } = order.instruction
-        return (
-          <Panel icon={WalletIcon} tone="pending" title="Pay with M-Pesa">
-            <ol className="flex list-decimal flex-col gap-2 pl-5">
-              <li>
-                Open M-Pesa and choose <strong>Send Money</strong>.
-              </li>
-              <li>
-                Send {total} to{" "}
-                <span className="font-price font-medium whitespace-nowrap tabular-nums">{payTo}</span> ({payToName}).
-              </li>
-              <li>
-                Enter the code from your M-Pesa SMS below. Your order reference is{" "}
-                <span className="font-price font-medium whitespace-nowrap tabular-nums">{reference}</span>.
-              </li>
-            </ol>
-            <ManualCodeForm orderId={order.id} />
-          </Panel>
-        )
-      }
       return (
         <ProcessingState
           title="Check your phone"
-          spinner="custom"
           description={
             <>
               We&apos;ve sent an M-Pesa prompt to{" "}
@@ -116,7 +130,6 @@ function StatusCard({ order }: { order: OrderView }) {
 
 const tones = {
   success: "bg-primary text-primary-foreground",
-  pending: "bg-muted text-foreground",
   error: "bg-destructive/10 text-destructive",
 }
 

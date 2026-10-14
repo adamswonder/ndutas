@@ -15,13 +15,6 @@ async function run(fn: () => Promise<unknown>): Promise<OrderActionResult> {
   }
 }
 
-export async function submitManualPaymentAction(orderId: string, code: string) {
-  if (typeof orderId !== "string" || typeof code !== "string") {
-    return { ok: false, error: "Invalid request." } satisfies OrderActionResult
-  }
-  return run(() => container().submitManualPayment(orderId, code))
-}
-
 export async function retryPaymentAction(orderId: string) {
   if (typeof orderId !== "string") {
     return { ok: false, error: "Invalid request." } satisfies OrderActionResult

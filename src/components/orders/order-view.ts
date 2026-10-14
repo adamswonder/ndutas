@@ -13,7 +13,6 @@ export type OrderView = {
   total: number
   instruction: Order["payment"]["instruction"]
   mpesaReceipt?: string
-  manualCode?: string
   failureReason?: string
 }
 
@@ -29,7 +28,6 @@ export function toOrderView(order: Order): OrderView {
     total: order.total,
     instruction: order.payment.instruction,
     mpesaReceipt: order.payment.mpesaReceipt,
-    manualCode: order.payment.manualCode,
     failureReason: order.payment.failureReason,
   }
 }

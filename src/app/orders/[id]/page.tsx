@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 import { SiteHeader } from "@/components/landing/site-header"
 import { OrderStatus } from "@/components/orders/order-status"
 import { toOrderView } from "@/components/orders/order-view"
-import { Spinner } from "@/components/ui/spinner"
+import { SpinnerCustom } from "@/components/spinner-custom"
 import { container } from "@/server/container"
 
 export const metadata: Metadata = { title: "Your order · Ndutas Kitchen" }
@@ -17,7 +17,7 @@ export default function OrderPage({ params }: PageProps<"/orders/[id]">) {
         <Suspense
           fallback={
             <div className="flex h-80 items-center justify-center rounded-2xl border border-border bg-card">
-              <Spinner className="size-6 text-primary" />
+              <SpinnerCustom className="size-6 text-primary" />
             </div>
           }
         >
