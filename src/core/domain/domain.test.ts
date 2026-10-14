@@ -2,15 +2,17 @@ import { describe, expect, it } from "vitest"
 import { addItem, MAX_QUANTITY_PER_LINE, priceCart, removeItem, setQuantity } from "./cart"
 import { kes, sum } from "./money"
 import {
+  attachInstruction,
   createCustomer,
   createOrder,
   markFailed,
   markPaid,
   retryPayment,
-  submitManualCode,
+  rejectManualPayment,
   type PaymentMethod,
 } from "./order"
-import { maskPhone, parseKenyanPhone } from "./phone"
+import { DomainError } from "./errors"
+import { checkKenyanPhone, maskPhone, parseKenyanPhone } from "./phone"
 import type { Product } from "./product"
 
 const products: Product[] = [
@@ -41,20 +43,33 @@ describe("money", () => {
 describe("phone", () => {
   it.each([
     ["0712345678", "254712345678"],
+    ["0790 123 456", "254790123456"],
     ["0112 345 678", "254112345678"],
+    ["0100 123 456", "254100123456"],
     ["+254712345678", "254712345678"],
+    ["+254 110 123 456", "254110123456"],
     ["254712345678", "254712345678"],
     ["712-345-678", "254712345678"],
   ])("normalises %s", (input, expected) => {
     expect(parseKenyanPhone(input)).toBe(expected)
   })
 
-  it.each(["", "0812345678", "071234567", "+255712345678", "07123456789"])(
-    "rejects %s",
-    (input) => {
-      expect(() => parseKenyanPhone(input)).toThrow(/valid Kenyan phone/)
-    }
-  )
+  it.each([
+    ["", "empty"],
+    ["   ", "empty"],
+    ["+255712345678", "not_kenyan"],
+    ["071234567", "too_short"],
+    ["0712", "too_short"],
+    ["07123456789", "too_long"],
+    ["+2547123456789", "too_long"],
+    ["0812345678", "not_mobile"],
+    ["0201234567", "not_mobile"],
+  ])("rejects %s as %s", (input, problem) => {
+    const result = checkKenyanPhone(input)
+    expect(result.ok).toBe(false)
+    expect(!result.ok && result.problem).toBe(problem)
+    expect(() => parseKenyanPhone(input)).toThrow(DomainError)
+  })
 
   it("masks the middle digits", () => {
     expect(maskPhone(parseKenyanPhone("0712345678"))).toBe("2547•••••678")
@@ -125,19 +140,31 @@ describe("order", () => {
     })
   })
 
-  it("follows the manual flow: pending → awaiting verification → paid", () => {
+  const pochi = {
+    kind: "manual",
+    payTo: "0700000000",
+    payToName: "Ndutas Kitchen",
+    amount: kes(2300),
+    reference: "NDT-1",
+  } as const
+
+  it("follows the Pochi flow: pending → awaiting confirmation → paid", () => {
     const o = order("manual")
-    expect(() => markPaid(o, "R1", now)).toThrow()
-    expect(() => submitManualCode(o, "short", now)).toThrow(/10-character/)
-    const submitted = submitManualCode(o, " sjk4h7q2xz ", now)
-    expect(submitted).toMatchObject({
-      status: "awaiting_verification",
-      payment: { manualCode: "SJK4H7Q2XZ" },
-    })
-    expect(markPaid(submitted, "SJK4H7Q2XZ", now).status).toBe("paid")
+    expect(() => markPaid(o, undefined, now)).toThrow()
+    const awaiting = attachInstruction(o, pochi, now)
+    expect(awaiting.status).toBe("awaiting_verification")
+    expect(markPaid(awaiting, undefined, now).status).toBe("paid")
   })
 
-  it("does not accept manual codes on STK orders", () => {
-    expect(() => submitManualCode(order("stk"), "SJK4H7Q2XZ", now)).toThrow()
+  it("lets the owner reject a Pochi order, which can then be retried", () => {
+    const rejected = rejectManualPayment(attachInstruction(order("manual"), pochi, now), "No payment", now)
+    expect(rejected).toMatchObject({ status: "rejected", payment: { failureReason: "No payment" } })
+    expect(retryPayment(rejected, now).status).toBe("pending_payment")
+  })
+
+  it("keeps STK orders pending until Daraja reports back", () => {
+    const o = attachInstruction(order("stk"), { kind: "stk", checkoutRequestId: "ws_1" }, now)
+    expect(o.status).toBe("pending_payment")
+    expect(() => rejectManualPayment(o, "x", now)).toThrow()
   })
 })

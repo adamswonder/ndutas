@@ -13,6 +13,8 @@ export type OrderLine = {
   lineTotal: Kes
 }
 
+// "stk": M-Pesa prompt to a Till/Paybill, confirmed automatically by Daraja.
+// "manual": Pochi la Biashara (no Till/Paybill), confirmed by the owner in the back office.
 export type PaymentMethod = "stk" | "manual"
 
 // What the customer is told to do to pay.
@@ -22,6 +24,7 @@ export type PaymentInstruction =
 
 export type OrderStatus =
   | "pending_payment"
+  // Manual (Pochi) orders wait here until the owner sees the money and confirms.
   | "awaiting_verification"
   | "paid"
   | "payment_failed"
@@ -31,7 +34,6 @@ export type Payment = {
   method: PaymentMethod
   instruction?: PaymentInstruction
   mpesaReceipt?: string
-  manualCode?: string
   failureReason?: string
 }
 
@@ -47,12 +49,20 @@ export type Order = {
   updatedAt: Date
 }
 
-export function createCustomer(name: string, phone: string): Customer {
+export const CUSTOMER_NAME_MAX = 80
+
+// The cleaned-up name, or null if it isn't 2 to 80 characters.
+export function normaliseCustomerName(name: string): string | null {
   const trimmed = name.trim().replace(/\s+/g, " ")
-  if (trimmed.length < 2 || trimmed.length > 80) {
+  return trimmed.length >= 2 && trimmed.length <= CUSTOMER_NAME_MAX ? trimmed : null
+}
+
+export function createCustomer(name: string, phone: string): Customer {
+  const normalised = normaliseCustomerName(name)
+  if (!normalised) {
     throw new DomainError("invalid_name", "Enter your name (2 to 80 characters).")
   }
-  return { name: trimmed, phone: parseKenyanPhone(phone) }
+  return { name: normalised, phone: parseKenyanPhone(phone) }
 }
 
 export function createOrder(input: {
@@ -100,10 +110,17 @@ export function attachInstruction(
   now: Date
 ): Order {
   assertStatus(order, ["pending_payment"], "start payment for")
-  return { ...order, payment: { ...order.payment, instruction }, updatedAt: now }
+  return {
+    ...order,
+    // Pochi payments can't be confirmed automatically, so they go straight to the owner.
+    status: instruction.kind === "manual" ? "awaiting_verification" : order.status,
+    payment: { ...order.payment, instruction },
+    updatedAt: now,
+  }
 }
 
-export function markPaid(order: Order, mpesaReceipt: string, now: Date): Order {
+// mpesaReceipt is optional for manual payments: the owner may confirm without typing it in.
+export function markPaid(order: Order, mpesaReceipt: string | undefined, now: Date): Order {
   const from: OrderStatus =
     order.payment.method === "manual" ? "awaiting_verification" : "pending_payment"
   assertStatus(order, [from], "mark as paid")
@@ -121,26 +138,6 @@ export function markFailed(order: Order, reason: string, now: Date): Order {
     ...order,
     status: "payment_failed",
     payment: { ...order.payment, failureReason: reason },
-    updatedAt: now,
-  }
-}
-
-export function submitManualCode(order: Order, code: string, now: Date): Order {
-  if (order.payment.method !== "manual") {
-    throw new DomainError("invalid_transition", "This order is paid by M-Pesa prompt.")
-  }
-  assertStatus(order, ["pending_payment"], "submit a code for")
-  const normalised = code.trim().toUpperCase()
-  if (!/^[A-Z0-9]{10}$/.test(normalised)) {
-    throw new DomainError(
-      "invalid_mpesa_code",
-      "Enter the 10-character M-Pesa code from your confirmation SMS."
-    )
-  }
-  return {
-    ...order,
-    status: "awaiting_verification",
-    payment: { ...order.payment, manualCode: normalised },
     updatedAt: now,
   }
 }
