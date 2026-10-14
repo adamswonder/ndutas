@@ -1,5 +1,4 @@
-import type { PaymentGateway } from "@/core/application/ports"
-import type { Order } from "@/core/domain/order"
+import type { Order, PaymentGateway } from "@ndutas/core"
 
 // Pochi la Biashara: Daraja can't collect into or confirm Pochi payments, so the customer
 // pays by hand and the owner confirms the order in the back office.

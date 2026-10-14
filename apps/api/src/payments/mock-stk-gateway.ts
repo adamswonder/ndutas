@@ -1,13 +1,14 @@
-import type { PaymentGateway, StkResult } from "@/core/application/ports"
-import type { Order } from "@/core/domain/order"
+import type { Order, PaymentGateway, StkResult } from "@ndutas/core"
 
 // Pretends to be Daraja's STK push: after a delay it reports the result the way the
 // real callback will. Phone numbers ending in 000 simulate the customer cancelling.
+// `keepAlive` lets Vercel keep the function running until the delayed result is recorded.
 export class MockStkGateway implements PaymentGateway {
   readonly method = "stk" as const
 
   constructor(
     private readonly onResult: (result: StkResult) => Promise<void>,
+    private readonly keepAlive: (task: Promise<unknown>) => void = () => {},
     private readonly delayMs = 6000
   ) {}
 
@@ -21,9 +22,10 @@ export class MockStkGateway implements PaymentGateway {
       ? { checkoutRequestId, ok: false, reason: "Request cancelled by user." }
       : { checkoutRequestId, ok: true, mpesaReceipt: mockReceipt() }
 
-    setTimeout(() => {
-      this.onResult(result).catch((error) => console.error("Mock STK result failed", error))
-    }, this.delayMs)
+    const delayed = new Promise<void>((resolve) => setTimeout(resolve, this.delayMs))
+      .then(() => this.onResult(result))
+      .catch((error) => console.error("Mock STK result failed", error))
+    this.keepAlive(delayed)
 
     return { kind: "stk" as const, checkoutRequestId }
   }

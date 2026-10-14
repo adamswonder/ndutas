@@ -1,0 +1,44 @@
+{
+  "name": "@ndutas/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/local.ts",
+    "start": "tsx --env-file-if-exists=.env src/local.ts",
+    "build": "pnpm --filter @ndutas/core build && tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src api scripts",
+    "typecheck": "tsc --noEmit",
+    "owner:create": "tsx --env-file-if-exists=.env scripts/create-owner.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file-if-exists=.env scripts/migrate.ts"
+  },
+  "dependencies": {
+    "@ndutas/core": "workspace:^",
+    "@neondatabase/serverless": "^1.2.0",
+    "@vercel/functions": "^3.10.1",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "drizzle-orm": "^0.45.4",
+    "express": "^5",
+    "jose": "^6.2.12",
+    "pg": "^8.23.1",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.9",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22",
+    "@types/pg": "^8.23.1",
+    "@types/supertest": "^7.2.1",
+    "@types/ws": "^8.18.2",
+    "drizzle-kit": "^0.31.11",
+    "eslint": "^9",
+    "supertest": "^7.3.1",
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.4"
+  }
+}
