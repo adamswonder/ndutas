@@ -10,20 +10,34 @@ import { useCart } from "@/components/cart/cart-provider"
 import { QuantityStepper } from "@/components/cart/quantity-stepper"
 import { ProcessingState } from "@/components/processing-state"
 import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
+import { SpinnerCustom } from "@/components/spinner-custom"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useIsClient } from "@/hooks/use-is-client"
+import type { PaymentSetup } from "@/core/application/ports"
+import { CUSTOMER_NAME_MAX, normaliseCustomerName } from "@/core/domain/order"
+import { checkKenyanPhone } from "@/core/domain/phone"
 import { formatPrice } from "@/lib/format"
+import { formatPhoneInput } from "@/lib/phone-input"
+import { PochiDialog } from "./pochi-dialog"
 
-export function CheckoutForm() {
+export function CheckoutForm({ payment }: { payment: PaymentSetup }) {
   const cart = useCart()
   const router = useRouter()
   const isClient = useIsClient()
   const [failure, setFailure] = React.useState<Extract<PlaceOrderResult, { ok: false }> | null>(null)
   const [placedOrderId, setPlacedOrderId] = React.useState<string | null>(null)
+  const [name, setName] = React.useState("")
+  const [phone, setPhone] = React.useState("")
+  const [phoneTouched, setPhoneTouched] = React.useState(false)
+  const [pochiOpen, setPochiOpen] = React.useState(false)
   const [pending, startTransition] = React.useTransition()
   const { lines, itemCount, subtotal } = cart.priced
+
+  // Same rules the server applies, so the button only unlocks for details it will accept.
+  const nameOk = normaliseCustomerName(name) !== null
+  const phoneCheck = checkKenyanPhone(phone)
+  const canPay = nameOk && phoneCheck.ok && !pending
 
   if (!isClient) {
     return <div className="h-96 animate-pulse rounded-2xl bg-muted/60" aria-hidden />
@@ -37,7 +51,7 @@ export function CheckoutForm() {
       <ProcessingState
         as="h2"
         title="Processing your order"
-        description="Please wait while we set up your M-Pesa payment. Do not refresh the page."
+        description="Please wait while we place your order. Do not refresh the page."
       />
     )
   }
@@ -55,13 +69,20 @@ export function CheckoutForm() {
     )
   }
 
-  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function onSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
-    const form = new FormData(event.currentTarget)
+    if (!canPay) return
+    // Pochi (no Till/Paybill): show how to pay first; the order is placed on "Proceed".
+    // STK push: place the order straight away and the M-Pesa prompt goes to the phone.
+    if (payment.method === "manual") setPochiOpen(true)
+    else placeOrder()
+  }
+
+  function placeOrder() {
     startTransition(async () => {
       const res = await placeOrderAction({
-        name: String(form.get("name") ?? ""),
-        phone: String(form.get("phone") ?? ""),
+        name,
+        phone,
         items: lines.map((line) => ({ productId: line.product.id, quantity: line.quantity })),
       })
       if (!res.ok) {
@@ -70,6 +91,12 @@ export function CheckoutForm() {
       }
       setFailure(null)
       setPlacedOrderId(res.orderId)
+      // Next keeps this page mounted after we leave, so wipe the customer's details
+      // rather than showing them to whoever checks out next on this device.
+      setName("")
+      setPhone("")
+      setPhoneTouched(false)
+      setPochiOpen(false)
       cart.clear()
       // Inside the transition, so `pending` stays true until the order page is shown.
       router.push(`/orders/${res.orderId}`)
@@ -78,6 +105,13 @@ export function CheckoutForm() {
 
   const fieldErrors = failure?.fieldErrors
   const formError = failure?.error
+  // "Too short" is just unfinished typing, so wait for blur; other problems
+  // (wrong country code, not a mobile range) show straight away.
+  const phoneError =
+    fieldErrors?.phone ??
+    (!phoneCheck.ok && (phoneTouched || (phone !== "" && phoneCheck.problem !== "too_short"))
+      ? phoneCheck.message
+      : undefined)
 
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_24rem]">
@@ -96,6 +130,12 @@ export function CheckoutForm() {
               name="name"
               autoComplete="name"
               required
+              maxLength={CUSTOMER_NAME_MAX}
+              value={name}
+              onChange={(event) => {
+                setName(event.target.value)
+                setFailure(null)
+              }}
               aria-invalid={!!fieldErrors?.name}
               aria-describedby={fieldErrors?.name ? "name-error" : undefined}
               className="h-11"
@@ -105,8 +145,8 @@ export function CheckoutForm() {
           <Field
             id="phone"
             label="M-Pesa phone number"
-            hint="The Safaricom number that will pay, e.g. 0712 345 678."
-            error={fieldErrors?.phone}
+            hint="The Safaricom number that will pay, e.g. 0712 345 678 or 0110 345 678."
+            error={phoneError}
           >
             <Input
               id="phone"
@@ -116,9 +156,15 @@ export function CheckoutForm() {
               autoComplete="tel"
               placeholder="07XX XXX XXX"
               required
-              aria-invalid={!!fieldErrors?.phone}
-              aria-describedby={fieldErrors?.phone ? "phone-error" : "phone-hint"}
-              className="h-11"
+              value={phone}
+              onChange={(event) => {
+                setPhone(formatPhoneInput(event.target.value))
+                setFailure(null)
+              }}
+              onBlur={() => setPhoneTouched(true)}
+              aria-invalid={!!phoneError}
+              aria-describedby={phoneError ? "phone-error" : "phone-hint"}
+              className="h-11 font-price tabular-nums placeholder:font-sans"
             />
           </Field>
         </section>
@@ -129,10 +175,16 @@ export function CheckoutForm() {
           </p>
         )}
 
-        <Button type="submit" size="lg" className="h-12 rounded-full text-base" disabled={pending}>
+        <Button
+          type="submit"
+          size="lg"
+          className="h-12 cursor-pointer rounded-full text-base"
+          disabled={!canPay}
+          aria-describedby={!canPay && !pending ? "pay-hint" : undefined}
+        >
           {pending ? (
             <>
-              <Spinner data-icon="inline-start" />
+              <SpinnerCustom data-icon="inline-start" />
               Placing order…
             </>
           ) : (
@@ -141,7 +193,24 @@ export function CheckoutForm() {
             </>
           )}
         </Button>
+        {!canPay && !pending && (
+          <p id="pay-hint" className="-mt-3 text-center text-sm text-muted-foreground">
+            Enter your name and M-Pesa number to continue.
+          </p>
+        )}
       </form>
+
+      {payment.method === "manual" && (
+        <PochiDialog
+          open={pochiOpen}
+          onOpenChange={setPochiOpen}
+          payTo={payment.payTo}
+          payToName={payment.payToName}
+          amount={subtotal}
+          payFrom={phone}
+          onProceed={placeOrder}
+        />
+      )}
 
       <aside className="h-fit rounded-2xl border border-border bg-card p-5 md:p-6 lg:sticky lg:top-6">
         <h2 className="font-heading text-xl">Order summary</h2>

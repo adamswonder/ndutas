@@ -4,6 +4,7 @@ import { ArrowLeftIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CheckoutForm } from "@/components/checkout/checkout-form"
 import { SiteHeader } from "@/components/landing/site-header"
+import { container } from "@/server/container"
 
 export const metadata: Metadata = { title: "Checkout · Ndutas Kitchen" }
 
@@ -23,7 +24,7 @@ export default function CheckoutPage() {
           Confirm your order, then pay with M-Pesa.
         </p>
         <div className="mt-8">
-          <CheckoutForm />
+          <CheckoutForm payment={container().paymentSetup} />
         </div>
       </main>
     </div>
