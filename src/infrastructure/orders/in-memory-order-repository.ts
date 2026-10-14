@@ -2,8 +2,9 @@ import type { OrderRepository } from "@/core/application/ports"
 import type { Order } from "@/core/domain/order"
 
 // Phase 1 stand-in for a database: orders are lost when the server restarts.
+// The map can be passed in so it outlives this object (see src/server/container.ts).
 export class InMemoryOrderRepository implements OrderRepository {
-  private readonly orders = new Map<string, Order>()
+  constructor(private readonly orders = new Map<string, Order>()) {}
 
   async save(order: Order) {
     this.orders.set(order.id, structuredClone(order))
