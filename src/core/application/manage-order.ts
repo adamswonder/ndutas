@@ -1,5 +1,5 @@
 import { DomainError } from "@/core/domain/errors"
-import { retryPayment, submitManualCode, type Order } from "@/core/domain/order"
+import { markPaid, rejectManualPayment, retryPayment, type Order } from "@/core/domain/order"
 import type { Clock, OrderRepository, PaymentGateway } from "./ports"
 import { startPayment } from "./start-payment"
 
@@ -15,9 +15,24 @@ export function makeGetOrder(deps: { orders: OrderRepository }) {
   return (id: string) => deps.orders.findById(id)
 }
 
-export function makeSubmitManualPayment(deps: Deps) {
-  return async function submitManualPayment(id: string, code: string): Promise<Order> {
-    const order = submitManualCode(await load(deps.orders, id), code, deps.clock.now())
+// Back office: the owner has seen the Pochi payment and confirms the order.
+export function makeConfirmManualPayment(deps: { orders: OrderRepository; clock: Clock }) {
+  return async function confirmManualPayment(id: string, mpesaReceipt?: string): Promise<Order> {
+    const order = await load(deps.orders, id)
+    if (order.payment.method !== "manual") {
+      throw new DomainError("invalid_transition", "Only Pochi orders are confirmed by hand.")
+    }
+    const receipt = mpesaReceipt?.trim().toUpperCase() || undefined
+    const paid = markPaid(order, receipt, deps.clock.now())
+    await deps.orders.save(paid)
+    return paid
+  }
+}
+
+// Back office: no matching Pochi payment arrived.
+export function makeRejectManualPayment(deps: { orders: OrderRepository; clock: Clock }) {
+  return async function rejectManual(id: string, reason: string): Promise<Order> {
+    const order = rejectManualPayment(await load(deps.orders, id), reason, deps.clock.now())
     await deps.orders.save(order)
     return order
   }

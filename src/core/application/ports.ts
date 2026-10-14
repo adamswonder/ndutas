@@ -12,8 +12,15 @@ export interface OrderRepository {
   findByCheckoutRequestId(checkoutRequestId: string): Promise<Order | null>
 }
 
+// What checkout needs to know before an order exists, so the UI can switch between
+// the Pochi steps dialog and an immediate M-Pesa prompt.
+export type PaymentSetup =
+  | { method: "stk" }
+  | { method: "manual"; payTo: string; payToName: string }
+
 export interface PaymentGateway {
   readonly method: PaymentMethod
+  describe(): PaymentSetup
   start(order: Order): Promise<PaymentInstruction>
 }
 
