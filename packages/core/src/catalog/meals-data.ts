@@ -1,5 +1,5 @@
-import type { Product } from "@/core/domain/product"
-import { unsplash } from "@/lib/site"
+import type { Product } from "../domain/product"
+import { unsplash } from "./images"
 
 // Placeholder menu and stock photos until the client's real meals are in.
 export const meals: Product[] = [

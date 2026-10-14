@@ -1,8 +1,8 @@
-import type { OrderRepository } from "@/core/application/ports"
-import type { Order } from "@/core/domain/order"
+import type { OrderQuery, OrderRepository } from "../application/ports"
+import type { Order } from "../domain/order"
 
-// Phase 1 stand-in for a database: orders are lost when the server restarts.
-// The map can be passed in so it outlives this object (see src/server/container.ts).
+// Stand-in for the database in tests and local development without DATABASE_URL:
+// orders are lost when the process restarts. The map can be passed in so it outlives this object.
 export class InMemoryOrderRepository implements OrderRepository {
   constructor(private readonly orders = new Map<string, Order>()) {}
 
@@ -23,5 +23,14 @@ export class InMemoryOrderRepository implements OrderRepository {
       }
     }
     return null
+  }
+
+  async list({ statuses, limit, before }: OrderQuery) {
+    return [...this.orders.values()]
+      .filter((order) => !statuses || statuses.includes(order.status))
+      .filter((order) => !before || order.createdAt < before)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, limit)
+      .map((order) => structuredClone(order))
   }
 }

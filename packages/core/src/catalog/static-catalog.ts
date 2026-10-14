@@ -1,5 +1,5 @@
-import type { ProductCatalog } from "@/core/application/ports"
-import type { Product } from "@/core/domain/product"
+import type { ProductCatalog } from "../application/ports"
+import type { Product } from "../domain/product"
 
 // Serves the hard-coded menu until products live in a database.
 export class StaticCatalog implements ProductCatalog {

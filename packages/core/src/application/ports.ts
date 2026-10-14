@@ -1,16 +1,29 @@
-import type { Order, PaymentInstruction, PaymentMethod } from "@/core/domain/order"
-import type { Product } from "@/core/domain/product"
+import type { Order, OrderStatus, PaymentInstruction, PaymentMethod } from "../domain/order"
+import type { Product } from "../domain/product"
 
 export interface ProductCatalog {
   all(): Promise<Product[]>
   findByIds(ids: readonly string[]): Promise<Product[]>
 }
 
+// Newest first. `before` pages backwards through createdAt.
+export type OrderQuery = { statuses?: readonly OrderStatus[]; limit: number; before?: Date }
+
 export interface OrderRepository {
   save(order: Order): Promise<void>
   findById(id: string): Promise<Order | null>
   findByCheckoutRequestId(checkoutRequestId: string): Promise<Order | null>
+  list(query: OrderQuery): Promise<Order[]>
 }
+
+// Lets the back office hear about orders as they happen (WebSocket fan-out in the API).
+export type OrderEvent = { type: "order.placed" | "order.updated"; order: Order }
+
+export interface OrderEvents {
+  publish(event: OrderEvent): Promise<void>
+}
+
+export const noOrderEvents: OrderEvents = { publish: async () => {} }
 
 // What checkout needs to know before an order exists, so the UI can switch between
 // the Pochi steps dialog and an immediate M-Pesa prompt.

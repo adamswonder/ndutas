@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
-import type { Order, PaymentInstruction } from "@/core/domain/order"
-import type { Product } from "@/core/domain/product"
-import { StaticCatalog } from "@/infrastructure/catalog/static-catalog"
-import { InMemoryOrderRepository } from "@/infrastructure/orders/in-memory-order-repository"
+import type { Order, PaymentInstruction } from "../domain/order"
+import type { Product } from "../domain/product"
+import { StaticCatalog } from "../catalog/static-catalog"
+import { InMemoryOrderRepository } from "../adapters/in-memory-order-repository"
 import {
   makeConfirmManualPayment,
   makeRejectManualPayment,

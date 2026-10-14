@@ -1,7 +1,15 @@
-import { DomainError } from "@/core/domain/errors"
-import { priceCart, setQuantity, type CartLine } from "@/core/domain/cart"
-import { createCustomer, createOrder, type Order } from "@/core/domain/order"
-import type { Clock, IdGenerator, OrderRepository, PaymentGateway, ProductCatalog } from "./ports"
+import { DomainError } from "../domain/errors"
+import { priceCart, setQuantity, type CartLine } from "../domain/cart"
+import { createCustomer, createOrder, type Order } from "../domain/order"
+import { publishSafely } from "./events"
+import type {
+  Clock,
+  IdGenerator,
+  OrderEvents,
+  OrderRepository,
+  PaymentGateway,
+  ProductCatalog,
+} from "./ports"
 import { startPayment } from "./start-payment"
 
 export type PlaceOrderInput = {
@@ -17,6 +25,7 @@ export type PlaceOrderDeps = {
   gateway: PaymentGateway
   ids: IdGenerator
   clock: Clock
+  events?: OrderEvents
 }
 
 export function makePlaceOrder(deps: PlaceOrderDeps) {
@@ -50,6 +59,8 @@ export function makePlaceOrder(deps: PlaceOrderDeps) {
     })
     await deps.orders.save(order)
 
-    return startPayment(deps, order)
+    const started = await startPayment(deps, order)
+    await publishSafely(deps.events, { type: "order.placed", order: started })
+    return started
   }
 }

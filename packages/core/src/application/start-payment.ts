@@ -1,4 +1,4 @@
-import { attachInstruction, markFailed, type Order } from "@/core/domain/order"
+import { attachInstruction, markFailed, type Order } from "../domain/order"
 import type { Clock, OrderRepository, PaymentGateway } from "./ports"
 
 // Asks the gateway to start collecting payment for a pending order. If the gateway
