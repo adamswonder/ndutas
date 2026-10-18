@@ -7,7 +7,7 @@
     "start": "tsx --env-file-if-exists=.env src/local.ts",
     "build": "pnpm --filter @ndutas/core build && tsc --noEmit",
     "test": "vitest run",
-    "lint": "eslint src api scripts",
+    "lint": "eslint src scripts",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env scripts/migrate.ts",

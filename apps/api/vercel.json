@@ -1,14 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm --filter @ndutas/core build && node -e \"require('fs').mkdirSync('public',{recursive:true})\"",
-  "regions": [
-    "fra1"
-  ],
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api/server"
-    }
-  ],
-  "outputDirectory": "public"
+  "buildCommand": "pnpm --filter @ndutas/core build",
+  "regions": ["fra1"]
 }
