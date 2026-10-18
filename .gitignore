@@ -44,3 +44,5 @@ next-env.d.ts
 
 CLAUDE.md
 /inspo
+# local PGlite database (apps/api)
+.data/
