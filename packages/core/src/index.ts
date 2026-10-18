@@ -13,13 +13,15 @@ export * from "./application/start-payment"
 export * from "./application/place-order"
 export * from "./application/record-stk-result"
 export * from "./application/manage-order"
-export * from "./application/owners"
+export * from "./application/staff"
+export * from "./application/products"
 
 export * from "./catalog/images"
 export * from "./catalog/meals-data"
 export * from "./catalog/static-catalog"
 
 export * from "./adapters/in-memory-order-repository"
-export * from "./adapters/in-memory-owner-repository"
+export * from "./adapters/in-memory-staff-repository"
+export * from "./adapters/in-memory-product-repository"
 
 export * from "./contracts"

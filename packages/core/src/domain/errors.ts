@@ -8,7 +8,10 @@ export type DomainErrorCode =
   | "invalid_transition"
   | "order_not_found"
   | "invalid_credentials"
-  | "invalid_owner"
+  | "invalid_staff"
+  | "invalid_product"
+  | "product_not_found"
+  | "product_unavailable"
 
 export class DomainError extends Error {
   constructor(

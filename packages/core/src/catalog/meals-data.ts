@@ -2,7 +2,7 @@ import type { Product } from "../domain/product"
 import { unsplash } from "./images"
 
 // Placeholder menu and stock photos until the client's real meals are in.
-export const meals: Product[] = [
+const menu: Omit<Product, "available">[] = [
   { id: "french-toast", category: "breakfast", name: "Berry French Toast", description: "Brioche, banana, blueberries, maple.", price: 1150, image: unsplash("1484723091739-30a097e8f929") },
   { id: "egg-toast", category: "breakfast", name: "Sunny Egg Toast", description: "Sourdough, fried egg, chilli flakes.", price: 900, image: unsplash("1525351484163-7529414344d8") },
   { id: "pancakes", category: "breakfast", name: "Buttermilk Pancakes", description: "Blueberries, banana, honey syrup.", price: 1050, image: unsplash("1528207776546-365bb710ee93") },
@@ -26,3 +26,6 @@ export const meals: Product[] = [
   { id: "mixed-grill", category: "dinner", name: "Mixed Grill", description: "Chicken, beef, roast vegetables.", price: 2600, image: unsplash("1555939594-58d7cb561ad1") },
   { id: "beef-plate", category: "dinner", name: "Pepper Beef Plate", description: "Seared beef, greens, chilli.", price: 2100, image: unsplash("1504674900247-0877df9cc836") },
 ]
+
+// The starting menu; the API seeds the products table from it.
+export const meals: Product[] = menu.map((meal) => ({ ...meal, available: true }))

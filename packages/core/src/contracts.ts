@@ -2,7 +2,9 @@
 // Change these first when an endpoint changes, so both sides stay in step.
 import type { Order, OrderStatus } from "./domain/order"
 import { maskPhone } from "./domain/phone"
-import type { OwnerView } from "./application/owners"
+import type { StaffView } from "./application/staff"
+import type { StoredProduct } from "./application/products"
+import type { Product, ProductDetails } from "./domain/product"
 
 // What a customer may see about their order: the phone number is masked.
 export type PublicOrderView = {
@@ -65,9 +67,12 @@ export type PlaceOrderRequest = {
 }
 export type PlaceOrderResponse = { orderId: string }
 
+// The storefront menu (sold-out items included, archived ones not).
+export type ProductsResponse = { products: Product[] }
+
 // Back office.
 export type LoginRequest = { email: string; password: string }
-export type LoginResponse = { token: string; owner: OwnerView }
+export type LoginResponse = { token: string; staff: StaffView }
 
 export const ORDER_FILTERS = {
   pending: ["awaiting_verification"],
@@ -88,3 +93,21 @@ export type WsTicketResponse = { ticket: string }
 export type OrderSocketMessage =
   | { type: "ready" }
   | { type: "order.placed" | "order.updated"; order: AdminOrderView }
+
+// Back office products.
+export type AdminProduct = Omit<StoredProduct, "archivedAt"> & { archivedAt: string | null }
+export type AdminProductsResponse = { products: AdminProduct[] }
+export type AdminProductResponse = { product: AdminProduct }
+export type ProductRequest = ProductDetails
+export type ProductAvailabilityRequest = { available: boolean }
+export type ProductArchiveRequest = { archived: boolean }
+export type UploadResponse = { url: string }
+export type ProductOrderRequest = { category: Product["category"]; ids: string[] }
+
+export function toAdminProduct(product: StoredProduct): AdminProduct {
+  return { ...product, archivedAt: product.archivedAt?.toISOString() ?? null }
+}
+
+export function toMenuProduct({ id, name, description, price, image, category, available }: Product): Product {
+  return { id, name, description, price, image, category, available }
+}

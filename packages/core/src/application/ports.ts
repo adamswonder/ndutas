@@ -1,6 +1,7 @@
 import type { Order, OrderStatus, PaymentInstruction, PaymentMethod } from "../domain/order"
 import type { Product } from "../domain/product"
 
+// The menu customers order from: archived products are left out, sold-out ones are kept.
 export interface ProductCatalog {
   all(): Promise<Product[]>
   findByIds(ids: readonly string[]): Promise<Product[]>

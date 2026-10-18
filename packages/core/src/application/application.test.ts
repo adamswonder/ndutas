@@ -13,8 +13,8 @@ import type { PaymentGateway } from "./ports"
 import { makeRecordStkResult } from "./record-stk-result"
 
 const products: Product[] = [
-  { id: "a", name: "A", description: "", price: 1150, image: "", category: "lunch" },
-  { id: "b", name: "B", description: "", price: 900, image: "", category: "dinner" },
+  { id: "a", name: "A", description: "", price: 1150, image: "", category: "lunch", available: true },
+  { id: "b", name: "B", description: "", price: 900, image: "", category: "dinner", available: true },
 ]
 
 function setup(start?: (order: Order) => Promise<PaymentInstruction>) {

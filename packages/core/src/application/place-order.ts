@@ -48,6 +48,13 @@ export function makePlaceOrder(deps: PlaceOrderDeps) {
         "Some items in your cart are no longer available. Please review your cart."
       )
     }
+    const soldOut = products.find((product) => !product.available)
+    if (soldOut) {
+      throw new DomainError(
+        "product_unavailable",
+        `${soldOut.name} is sold out right now. Please remove it from your cart.`
+      )
+    }
 
     const order = createOrder({
       id: deps.ids.orderId(),

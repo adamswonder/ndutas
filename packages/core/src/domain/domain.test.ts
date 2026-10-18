@@ -16,8 +16,8 @@ import { checkKenyanPhone, maskPhone, parseKenyanPhone } from "./phone"
 import type { Product } from "./product"
 
 const products: Product[] = [
-  { id: "a", name: "A", description: "", price: 1150, image: "", category: "lunch" },
-  { id: "b", name: "B", description: "", price: 900, image: "", category: "dinner" },
+  { id: "a", name: "A", description: "", price: 1150, image: "", category: "lunch", available: true },
+  { id: "b", name: "B", description: "", price: 900, image: "", category: "dinner", available: true },
 ]
 const now = new Date("2026-10-13T10:00:00Z")
 
