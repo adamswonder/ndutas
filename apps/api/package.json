@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env scripts/migrate.ts",
-    "staff:create": "tsx --env-file-if-exists=.env scripts/create-staff.ts"
+    "staff:create": "tsx --env-file-if-exists=.env scripts/create-staff.ts",
+    "db:migrate:production": "tsx --env-file-if-exists=.env scripts/migrate.ts --production",
+    "staff:create:production": "tsx --env-file-if-exists=.env scripts/create-staff.ts --production"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.9",

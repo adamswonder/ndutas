@@ -1,5 +1,6 @@
 // Creates a back office login: `pnpm --filter @ndutas/api staff:create`.
-// Add `--production` (after `--`) to create it on the live database instead.
+// `staff:create:production` creates it on the live database instead (the flag is built in,
+// because PowerShell drops `--` and pnpm would swallow a bare `--production`).
 // Uses Neon when DATABASE_URL is set, otherwise the local PGlite database.
 // Prompts for the details so the password never lands in shell history.
 import { target } from "./target-database.js"
