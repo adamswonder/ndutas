@@ -26,15 +26,13 @@ export function CartDrawer() {
   const cart = useCart()
   const isDesktop = useMediaQuery("(min-width: 768px)")
   const { lines, itemCount, subtotal } = cart.priced
-  const pathname = usePathname()
-  const { setOpen } = cart
-
-  // Close once a link from the drawer (Checkout, Browse menu) has actually navigated.
-  React.useEffect(() => {
-    setOpen(false)
-  }, [pathname, setOpen])
 
   return (
+    <>
+    {/* Suspense: usePathname is request data, and this drawer sits in the store layout. */}
+    <React.Suspense fallback={null}>
+      <CloseOnNavigation close={cart.setOpen} />
+    </React.Suspense>
     <Drawer
       open={cart.open}
       onOpenChange={cart.setOpen}
@@ -134,7 +132,17 @@ export function CartDrawer() {
         )}
       </DrawerContent>
     </Drawer>
+    </>
   )
+}
+
+// Closes the drawer once a link from it (Checkout, Browse menu) has actually navigated.
+function CloseOnNavigation({ close }: { close: (open: boolean) => void }) {
+  const pathname = usePathname()
+  React.useEffect(() => {
+    close(false)
+  }, [pathname, close])
+  return null
 }
 
 function ClearCartButton({ onConfirm }: { onConfirm: () => void }) {
