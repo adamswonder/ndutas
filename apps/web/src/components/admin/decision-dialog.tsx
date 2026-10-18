@@ -20,8 +20,12 @@ import { cn } from "@/lib/utils"
 
 // A confirmation dialog with one optional text field (M-Pesa code, rejection reason).
 // Unlike ConfirmDialog it stays open while the request runs and shows the error if it fails.
+// Pass `trigger` for a button that opens it, or `open`/`onOpenChange` to open it from elsewhere
+// (a dropdown menu item, which unmounts before a nested dialog could open).
 export function DecisionDialog({
   trigger,
+  open: openProp,
+  onOpenChange,
   icon,
   variant,
   title,
@@ -32,7 +36,9 @@ export function DecisionDialog({
   confirmLabel,
   onConfirm,
 }: {
-  trigger: React.ReactElement
+  trigger?: React.ReactElement
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   icon: React.ReactNode
   variant: "default" | "destructive"
   title: string
@@ -44,7 +50,12 @@ export function DecisionDialog({
   onConfirm: (value: string) => Promise<void>
 }) {
   const id = React.useId()
-  const [open, setOpen] = React.useState(false)
+  const [ownOpen, setOwnOpen] = React.useState(false)
+  const open = openProp ?? ownOpen
+  const setOpen = (next: boolean) => {
+    setOwnOpen(next)
+    onOpenChange?.(next)
+  }
   const [value, setValue] = React.useState("")
   const [error, setError] = React.useState<string | null>(null)
   const [pending, setPending] = React.useState(false)
@@ -73,7 +84,7 @@ export function DecisionDialog({
         if (!next) setError(null)
       }}
     >
-      <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
+      {trigger && <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>}
       <AlertDialogContent size="sm">
         <form onSubmit={submit} className="grid gap-4">
           <AlertDialogHeader>
