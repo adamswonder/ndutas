@@ -13,9 +13,12 @@ export function createMenuRevalidator(config: Config) {
       body: JSON.stringify({ tag: "products" }),
       signal: AbortSignal.timeout(5000),
     })
-      // Typed by hand: Vercel's build resolves fetch's Response without `ok`/`status`.
-      .then((res: { ok: boolean; status: number }) => {
-        if (!res.ok) console.error(`Menu revalidation failed: ${res.status}`)
+      .then((response) => {
+        // Vercel's build sees fetch's Response as an empty type (@types/node leaves it empty
+        // whenever something declares a global `onmessage`), so read the two fields we need
+        // through `unknown`, which type-checks however Response is defined.
+        const { ok, status } = response as unknown as { ok: boolean; status: number }
+        if (!ok) console.error(`Menu revalidation failed: ${status}`)
       })
       .catch((error) => console.error("Menu revalidation failed", error))
     if (process.env.VERCEL) waitUntil(task)
