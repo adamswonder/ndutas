@@ -32,15 +32,16 @@ function newKey(type: ImageType) {
   return `products/${crypto.randomUUID()}.${extensions[type]}`
 }
 
-// Production: Vercel Blob (public URLs on *.public.blob.vercel-storage.com).
+// Production: Vercel Blob (public URLs on *.public.blob.vercel-storage.com). Without a token,
+// @vercel/blob authenticates with Vercel's OIDC token and BLOB_STORE_ID.
 export class VercelBlobImageStore implements ImageStore {
-  constructor(private readonly token: string) {}
+  constructor(private readonly token?: string) {}
 
   async save(data: Buffer, type: ImageType) {
     const blob = await put(newKey(type), data, {
       access: "public",
       contentType: type,
-      token: this.token,
+      ...(this.token ? { token: this.token } : {}),
       cacheControlMaxAge: 60 * 60 * 24 * 365,
     })
     return blob.url

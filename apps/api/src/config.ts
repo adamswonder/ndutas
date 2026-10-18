@@ -15,9 +15,11 @@ export type Config = {
   // Where to tell the storefront that the menu changed (its /api/revalidate route).
   webRevalidateUrl?: string
   revalidateSecret?: string
-  // Product photo uploads: Vercel Blob when the token is set, otherwise a local folder that the
-  // API serves itself (publicUrl is how browsers reach this API).
+  // Product photo uploads go to Vercel Blob, authenticated either by a read-write token, or
+  // (how Vercel connects stores now) by BLOB_STORE_ID plus the function's own OIDC identity.
+  // Otherwise a local folder that the API serves itself (publicUrl is how browsers reach it).
   blobToken?: string
+  blobStoreId?: string
   localUploadsDir: string
   publicUrl: string
   // Local development without a database: seed one back office login.
@@ -48,6 +50,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     localDataDir: env.LOCAL_DB_DIR || ".data/pglite",
     webRevalidateUrl: env.WEB_REVALIDATE_URL || undefined,
     blobToken: env.BLOB_READ_WRITE_TOKEN || undefined,
+    blobStoreId: env.BLOB_STORE_ID || undefined,
     localUploadsDir: env.LOCAL_UPLOADS_DIR || ".data/uploads",
     publicUrl: (env.PUBLIC_API_URL || `http://localhost:${env.PORT || 4000}`).replace(/\/$/, ""),
     revalidateSecret: env.REVALIDATE_SECRET || undefined,

@@ -50,9 +50,12 @@ export function buildContainer(config: Config, { db, events, feed }: Database) {
       ? new MockStkGateway(recordStkResult, (task) => (process.env.VERCEL ? waitUntil(task) : undefined))
       : new ManualMpesaGateway(config.payment.payTo, config.payment.payToName)
 
-  // Vercel Blob in production; locally a folder the API serves at /uploads. On Vercel without a
-  // token there is no store (the file system is read-only), so uploads answer 503.
-  const images: ImageStore | null = config.blobToken
+  // Vercel Blob in production: with a read-write token, or with BLOB_STORE_ID, where @vercel/blob
+  // signs in with the function's OIDC token (only available on Vercel). Locally, a folder the API
+  // serves at /uploads. On Vercel with neither there is no store (the file system is read-only),
+  // so uploads answer 503.
+  const blobReady = !!config.blobToken || (!!process.env.VERCEL && !!config.blobStoreId)
+  const images: ImageStore | null = blobReady
     ? new VercelBlobImageStore(config.blobToken)
     : process.env.VERCEL
       ? null
