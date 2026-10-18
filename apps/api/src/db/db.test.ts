@@ -1,12 +1,12 @@
 import { PGlite } from "@electric-sql/pglite"
-import type { Order, Owner } from "@ndutas/core"
+import type { Order, Staff } from "@ndutas/core"
 import { kes } from "@ndutas/core"
 import { drizzle } from "drizzle-orm/pglite"
 import { migrate } from "drizzle-orm/pglite/migrator"
 import { beforeAll, describe, expect, it } from "vitest"
 import type { Db } from "./client.js"
 import { DrizzleOrderRepository } from "./order-repository.js"
-import { DrizzleOwnerRepository } from "./owner-repository.js"
+import { DrizzleStaffRepository } from "./staff-repository.js"
 import * as schema from "./schema.js"
 
 // A real Postgres engine in-process: runs the generated migrations, then exercises the
@@ -95,21 +95,34 @@ describe("DrizzleOrderRepository", () => {
   })
 })
 
-describe("DrizzleOwnerRepository", () => {
-  it("stores owners and enforces unique emails", async () => {
-    const repo = new DrizzleOwnerRepository(db)
-    const owner: Owner = {
+describe("DrizzleStaffRepository", () => {
+  it("stores staff with roles, lists them and enforces unique emails", async () => {
+    const repo = new DrizzleStaffRepository(db)
+    const owner: Staff = {
       id: "55555555-5555-4555-8555-555555555555",
       email: "shelma@example.com",
       name: "Shelma Maina",
+      role: "owner",
       passwordHash: "$2a$12$hash",
       createdAt: new Date("2026-10-14T08:00:00Z"),
+      disabledAt: null,
+    }
+    const helper: Staff = {
+      ...owner,
+      id: "77777777-7777-4777-8777-777777777777",
+      email: "jane@example.com",
+      name: "Jane",
+      role: "staff",
+      createdAt: new Date("2026-10-14T09:00:00Z"),
     }
     await repo.save(owner)
+    await repo.save(helper)
     expect(await repo.findByEmail("shelma@example.com")).toEqual(owner)
-    expect(await repo.findById(owner.id)).toEqual(owner)
-    await expect(
-      repo.save({ ...owner, id: "66666666-6666-4666-8666-666666666666" })
-    ).rejects.toThrow()
+    expect((await repo.list()).map((m) => m.role)).toEqual(["owner", "staff"])
+
+    const disabledAt = new Date("2026-10-15T08:00:00Z")
+    await repo.save({ ...helper, disabledAt })
+    expect((await repo.findById(helper.id))?.disabledAt).toEqual(disabledAt)
+    await expect(repo.save({ ...owner, id: "66666666-6666-4666-8666-666666666666" })).rejects.toThrow()
   })
 })

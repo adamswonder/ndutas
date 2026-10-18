@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs"
 import { jwtVerify, SignJWT } from "jose"
-import type { OwnerView, PasswordHasher } from "@ndutas/core"
+import type { PasswordHasher, StaffView } from "@ndutas/core"
 
 export const bcryptHasher: PasswordHasher = {
   hash: (password) => bcrypt.hash(password, 12),
@@ -41,9 +41,9 @@ export function createAuth(secret: Uint8Array) {
   }
 
   return {
-    issueSession: (owner: OwnerView) => sign(owner.id, "admin", `${SESSION_HOURS}h`),
+    issueSession: (member: StaffView) => sign(member.id, "admin", `${SESSION_HOURS}h`),
     verifySession: (token: string) => verify(token, "admin"),
-    issueWsTicket: (ownerId: string) => sign(ownerId, "ws", `${TICKET_SECONDS}s`),
+    issueWsTicket: (staffId: string) => sign(staffId, "ws", `${TICKET_SECONDS}s`),
     verifyWsTicket: (ticket: string) => verify(ticket, "ws"),
   }
 }

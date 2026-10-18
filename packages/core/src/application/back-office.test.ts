@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { InMemoryOrderRepository } from "../adapters/in-memory-order-repository"
-import { InMemoryOwnerRepository } from "../adapters/in-memory-owner-repository"
+import { InMemoryStaffRepository } from "../adapters/in-memory-staff-repository"
 import { StaticCatalog } from "../catalog/static-catalog"
 import { toAdminOrderView, toPublicOrderView } from "../contracts"
 import type { Product } from "../domain/product"
@@ -10,12 +10,12 @@ import {
   makeRejectManualPayment,
   makeRetryPayment,
 } from "./manage-order"
-import { makeCreateOwner, makeLogIn, type PasswordHasher } from "./owners"
+import { makeCreateStaff, makeLogIn, type PasswordHasher } from "./staff"
 import { makePlaceOrder } from "./place-order"
 import type { OrderEvent, PaymentGateway } from "./ports"
 
 const products: Product[] = [
-  { id: "a", name: "A", description: "", price: 1150, image: "", category: "lunch" },
+  { id: "a", name: "A", description: "", price: 1150, image: "", category: "lunch", available: true },
 ]
 
 const pochi: PaymentGateway = {
@@ -127,52 +127,53 @@ describe("order views", () => {
   })
 })
 
-describe("owners", () => {
+describe("staff accounts", () => {
   // Reversible fake: enough to prove the use cases never store the plain password.
   const passwords: PasswordHasher = {
     hash: async (p) => `hashed:${p}`,
     verify: async (p, h) => h === `hashed:${p}`,
   }
 
-  function owners() {
+  function accounts() {
+    let n = 0
     const deps = {
-      owners: new InMemoryOwnerRepository(),
+      staff: new InMemoryStaffRepository(),
       passwords,
-      ids: { ownerId: () => "owner-1" },
+      ids: { staffId: () => `staff-${++n}` },
       clock: { now: () => new Date() },
     }
-    return { deps, create: makeCreateOwner(deps), logIn: makeLogIn(deps) }
+    return { deps, create: makeCreateStaff(deps), logIn: makeLogIn(deps) }
   }
 
   it("creates an owner with a hashed password and lets them log in", async () => {
-    const { deps, create, logIn } = owners()
-    await create({ email: " Shelma@Example.com ", name: "Shelma Maina", password: "correct horse" })
-    expect((await deps.owners.findByEmail("shelma@example.com"))?.passwordHash).toBe(
-      "hashed:correct horse"
-    )
+    const { deps, create, logIn } = accounts()
+    await create({ email: " Shelma@Example.com ", name: "Shelma Maina", password: "correct horse", role: "owner" })
+    expect((await deps.staff.findByEmail("shelma@example.com"))?.passwordHash).toBe("hashed:correct horse")
     expect(await logIn("SHELMA@example.com", "correct horse")).toEqual({
-      id: "owner-1",
+      id: "staff-1",
       email: "shelma@example.com",
       name: "Shelma Maina",
+      role: "owner",
     })
   })
 
-  it("gives the same error for a wrong password and an unknown email", async () => {
-    const { create, logIn } = owners()
-    await create({ email: "shelma@example.com", name: "Shelma", password: "correct horse" })
-    await expect(logIn("shelma@example.com", "nope")).rejects.toThrow("Wrong email or password.")
-    await expect(logIn("who@example.com", "correct horse")).rejects.toThrow(
-      "Wrong email or password."
-    )
+  it("gives the same error for a wrong password, an unknown email and a disabled account", async () => {
+    const { deps, create, logIn } = accounts()
+    const helper = await create({ email: "jane@example.com", name: "Jane", password: "correct horse", role: "staff" })
+    await expect(logIn("jane@example.com", "nope")).rejects.toThrow("Wrong email or password.")
+    await expect(logIn("who@example.com", "correct horse")).rejects.toThrow("Wrong email or password.")
+    const stored = (await deps.staff.findById(helper.id))!
+    await deps.staff.save({ ...stored, disabledAt: new Date() })
+    await expect(logIn("jane@example.com", "correct horse")).rejects.toThrow("Wrong email or password.")
   })
 
-  it("rejects weak passwords, bad emails and duplicates", async () => {
-    const { create } = owners()
-    await expect(create({ email: "x", name: "S", password: "correct horse" })).rejects.toThrow(/email/)
-    await expect(create({ email: "s@e.co", name: "S", password: "short" })).rejects.toThrow(/10/)
-    await create({ email: "s@e.co", name: "S", password: "correct horse" })
-    await expect(create({ email: "S@E.co", name: "S", password: "correct horse" })).rejects.toThrow(
-      /already exists/
-    )
+  it("rejects weak passwords, bad emails, unknown roles and duplicates", async () => {
+    const { create } = accounts()
+    const base = { name: "S", password: "correct horse", role: "staff" as const }
+    await expect(create({ ...base, email: "x" })).rejects.toThrow(/email/)
+    await expect(create({ ...base, email: "s@e.co", password: "short" })).rejects.toThrow(/10/)
+    await expect(create({ ...base, email: "s@e.co", role: "boss" as never })).rejects.toThrow(/role/)
+    await create({ ...base, email: "s@e.co" })
+    await expect(create({ ...base, email: "S@E.co" })).rejects.toThrow(/already/)
   })
 })

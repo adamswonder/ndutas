@@ -10,6 +10,7 @@ import { SpinnerCustom } from "@/components/spinner-custom"
 import { useIsClient } from "@/hooks/use-is-client"
 import { site } from "@/lib/site"
 import { cn } from "@/lib/utils"
+import { AdminNav } from "./admin-nav"
 import { useAuthStore } from "./auth-store"
 import { useOrdersStore, type ConnectionState } from "./orders-store"
 import { useOrderSocket } from "./use-order-socket"
@@ -42,7 +43,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
 function SignedIn({ children }: { children: React.ReactNode }) {
   useOrderSocket()
-  const owner = useAuthStore((state) => state.owner)
+  const staff = useAuthStore((state) => state.staff)
   const connection = useOrdersStore((state) => state.connection)
   const status = connectionLabel[connection]
 
@@ -54,7 +55,7 @@ function SignedIn({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-1 flex-col">
       <header className="border-b border-border">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 md:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 pt-4 pb-2 md:px-6">
           <Link href="/admin" className="flex items-center gap-2.5">
             <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
               <UtensilsCrossedIcon className="size-4" />
@@ -79,11 +80,14 @@ function SignedIn({ children }: { children: React.ReactNode }) {
               variant="default"
               icon={<LogOutIcon />}
               title="Log out?"
-              description={`You'll stop getting new order alerts${owner ? `, ${owner.name}` : ""}.`}
+              description={`You'll stop getting new order alerts${staff ? `, ${staff.name}` : ""}.`}
               confirmLabel="Log out"
               onConfirm={logOut}
             />
           </div>
+        </div>
+        <div className="mx-auto max-w-6xl px-2 md:px-4">
+          <AdminNav />
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 md:px-6 md:py-10">{children}</main>

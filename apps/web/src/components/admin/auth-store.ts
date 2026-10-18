@@ -1,13 +1,13 @@
 "use client"
 
-import type { LoginResponse, OwnerView } from "@ndutas/core"
+import type { LoginResponse, StaffView } from "@ndutas/core"
 import { create } from "zustand"
 import { createJSONStorage, persist, type StateStorage } from "zustand/middleware"
 import { adminFetch } from "./admin-api"
 
 type AuthState = {
   token: string | null
-  owner: OwnerView | null
+  staff: StaffView | null
   // Shown on the login page after the session runs out.
   notice: string | null
   logIn: (email: string, password: string) => Promise<void>
@@ -27,7 +27,7 @@ const sessionStore: StateStorage = {
     try {
       sessionStorage.setItem(key, value)
     } catch {
-      // Not persisted; the owner stays signed in for this page view only.
+      // Not persisted; they stay signed in for this page view only.
     }
   },
   removeItem: (key) => {
@@ -43,23 +43,24 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       token: null,
-      owner: null,
+      staff: null,
       notice: null,
       async logIn(email, password) {
-        const { token, owner } = await adminFetch<LoginResponse>("/admin/login", {
+        const { token, staff } = await adminFetch<LoginResponse>("/admin/login", {
           method: "POST",
           body: { email, password },
         })
-        set({ token, owner, notice: null })
+        set({ token, staff, notice: null })
       },
       logOut(notice) {
-        set({ token: null, owner: null, notice: notice ?? null })
+        set({ token: null, staff: null, notice: notice ?? null })
       },
     }),
     {
-      name: "ndutas.admin.v1",
+      // v2: the session holds a staff member (with role), not an owner.
+      name: "ndutas.admin.v2",
       storage: createJSONStorage(() => sessionStore),
-      partialize: ({ token, owner }) => ({ token, owner }),
+      partialize: ({ token, staff }) => ({ token, staff }),
     }
   )
 )

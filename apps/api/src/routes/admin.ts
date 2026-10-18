@@ -2,24 +2,23 @@ import {
   MAX_ORDERS_PER_PAGE,
   ORDER_FILTERS,
   toAdminOrderView,
-  toOwnerView,
   type ConfirmOrderRequest,
   type LoginRequest,
   type LoginResponse,
   type OrderFilter,
   type OrderResponse,
   type OrdersResponse,
-  type OwnerView,
   type RejectOrderRequest,
   type WsTicketResponse,
 } from "@ndutas/core"
-import { Router, type RequestHandler } from "express"
+import { Router } from "express"
 import type { Container } from "../container.js"
 import { HttpError } from "../errors.js"
+import { adminProductRoutes } from "./admin-products.js"
+import { adminUploadRoutes } from "./admin-uploads.js"
+import { currentStaff, requireStaff } from "./guards.js"
 
-type Locals = { owner: OwnerView }
-
-// The back office's endpoints, called from the owner's browser with a Bearer session token.
+// The back office's endpoints, called from the browser with a Bearer session token.
 export function adminRoutes(container: Container) {
   const router = Router()
 
@@ -28,25 +27,19 @@ export function adminRoutes(container: Container) {
     if (typeof email !== "string" || typeof password !== "string") {
       throw new HttpError(400, "Enter your email and password.")
     }
-    const owner = await container.logIn(email, password)
-    const token = await container.auth.issueSession(owner)
-    res.json({ token, owner } satisfies LoginResponse)
+    const staff = await container.logIn(email, password)
+    const token = await container.auth.issueSession(staff)
+    res.json({ token, staff } satisfies LoginResponse)
   })
 
-  // Everything below needs a signed-in owner.
-  const requireOwner: RequestHandler = async (req, res, next) => {
-    const token = /^Bearer (.+)$/.exec(req.get("authorization") ?? "")?.[1]
-    const ownerId = token ? await container.auth.verifySession(token) : null
-    // Re-read the owner so a deleted account loses access straight away.
-    const owner = ownerId ? await container.owners.findById(ownerId) : null
-    if (!owner) throw new HttpError(401, "Please sign in again.")
-    ;(res.locals as Locals).owner = toOwnerView(owner)
-    next()
-  }
-  router.use(requireOwner)
+  // Everything below needs a signed-in, active staff member.
+  router.use(requireStaff(container))
+
+  router.use("/products", adminProductRoutes(container))
+  router.use("/uploads", adminUploadRoutes(container))
 
   router.get("/me", (_req, res) => {
-    res.json({ owner: (res.locals as Locals).owner })
+    res.json({ staff: currentStaff(res) })
   })
 
   router.get("/orders", async (req, res) => {
@@ -81,7 +74,7 @@ export function adminRoutes(container: Container) {
   })
 
   router.post("/ws-ticket", async (_req, res) => {
-    const ticket = await container.auth.issueWsTicket((res.locals as Locals).owner.id)
+    const ticket = await container.auth.issueWsTicket(currentStaff(res).id)
     res.json({ ticket } satisfies WsTicketResponse)
   })
 

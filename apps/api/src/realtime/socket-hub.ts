@@ -1,13 +1,13 @@
 import type { IncomingMessage, Server } from "node:http"
 import type { Duplex } from "node:stream"
-import { toAdminOrderView, type OrderSocketMessage } from "@ndutas/core"
+import { isActiveStaff, toAdminOrderView, type OrderSocketMessage } from "@ndutas/core"
 import { WebSocket, WebSocketServer } from "ws"
 import type { Container } from "../container.js"
 import type { FeedEvent } from "./feed.js"
 
 const HEARTBEAT_MS = 25_000
 
-// Live order alerts for signed-in owners: GET /admin/ws?ticket=<one-minute ticket>.
+// Live order alerts for signed-in staff: GET /admin/ws?ticket=<one-minute ticket>.
 // Each API instance pushes to the sockets it holds; the feed (LISTEN/NOTIFY on Neon)
 // tells every instance about orders placed anywhere. Vercel closes sockets at the
 // function's max duration, so clients reconnect and refetch (see the web back office).
@@ -29,11 +29,11 @@ export function attachOrderSockets(server: Server, container: Container) {
   server.on("upgrade", async (req: IncomingMessage, socket: Duplex, head: Buffer) => {
     const url = new URL(req.url ?? "/", "http://localhost")
     const ticket = url.searchParams.get("ticket")
-    const ownerId =
+    const staffId =
       url.pathname.endsWith("/admin/ws") && ticket
         ? await container.auth.verifyWsTicket(ticket)
         : null
-    if (!ownerId || !(await container.owners.findById(ownerId))) {
+    if (!staffId || !isActiveStaff(await container.staff.findById(staffId))) {
       socket.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n")
       socket.destroy()
       return

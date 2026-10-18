@@ -4,24 +4,18 @@ import type { OrderSocketMessage } from "@ndutas/core"
 import request from "supertest"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { WebSocket } from "ws"
-import { loadConfig } from "./config.js"
-import { buildContainer } from "./container.js"
 import { createApiServer } from "./http-server.js"
+import { createTestContainer } from "./test-support.js"
 
-const config = loadConfig({
-  NODE_ENV: "test",
-  JWT_SECRET: "test-secret-test-secret-test-secret!",
-  WEB_ORIGIN: "http://localhost:3000",
-})
-const container = buildContainer(config)
+const { config, container } = await createTestContainer()
 let server: Server
 let base: string
 
-const owner = { email: "shelma@example.com", name: "Shelma Maina", password: "correct horse battery" }
+const owner = { email: "shelma@example.com", name: "Shelma Maina", password: "correct horse battery", role: "owner" as const }
 const goodOrder = { name: "Wanjiru", phone: "0712 345 678", items: [{ productId: "french-toast", quantity: 2 }] }
 
 beforeAll(async () => {
-  await container.createOwner(owner)
+  await container.createStaff(owner)
   server = createApiServer(container, config)
   await new Promise<void>((resolve) => server.listen(0, resolve))
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`

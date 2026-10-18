@@ -8,8 +8,7 @@ import {
   type OrdersResponse,
 } from "@ndutas/core"
 import { create } from "zustand"
-import { AdminApiError, adminFetch } from "./admin-api"
-import { useAuthStore } from "./auth-store"
+import { asStaff } from "./staff-fetch"
 
 export type ConnectionState = "connecting" | "live" | "reconnecting"
 
@@ -20,7 +19,7 @@ type OrdersState = {
   loaded: boolean
   error: string | null
   nextBefore: string | null
-  // Orders that arrived while the owner was looking elsewhere.
+  // Orders that arrived while nobody was looking at them.
   unseen: Record<string, true>
   connection: ConnectionState
   setFilter: (filter: OrderFilter) => void
@@ -45,19 +44,6 @@ const initial = {
   connection: "connecting" as ConnectionState,
 }
 
-// Calls the API as the signed-in owner; an expired session sends them back to the login.
-async function asOwner<T>(path: string, init: { method?: string; body?: unknown } = {}) {
-  const { token, logOut } = useAuthStore.getState()
-  try {
-    return await adminFetch<T>(path, { ...init, token })
-  } catch (error) {
-    if (error instanceof AdminApiError && error.status === 401) {
-      logOut("Your session ended. Please sign in again.")
-    }
-    throw error
-  }
-}
-
 export const useOrdersStore = create<OrdersState>()((set, get) => ({
   ...initial,
 
@@ -71,7 +57,7 @@ export const useOrdersStore = create<OrdersState>()((set, get) => ({
     const { filter } = get()
     set({ loading: true, error: null })
     try {
-      const res = await asOwner<OrdersResponse>(`/admin/orders?filter=${filter}`)
+      const res = await asStaff<OrdersResponse>(`/admin/orders?filter=${filter}`)
       set((state) => {
         const byId = { ...state.byId }
         const unseen = { ...state.unseen }
@@ -93,7 +79,7 @@ export const useOrdersStore = create<OrdersState>()((set, get) => ({
     if (!nextBefore) return
     set({ loading: true })
     try {
-      const res = await asOwner<OrdersResponse>(
+      const res = await asStaff<OrdersResponse>(
         `/admin/orders?filter=${filter}&before=${encodeURIComponent(nextBefore)}`
       )
       set((state) => ({
@@ -131,7 +117,7 @@ export const useOrdersStore = create<OrdersState>()((set, get) => ({
     const before = get().byId[id]
     if (before) get().upsert({ ...before, status: "paid", mpesaReceipt })
     try {
-      const { order } = await asOwner<OrderResponse>(`/admin/orders/${id}/confirm`, {
+      const { order } = await asStaff<OrderResponse>(`/admin/orders/${id}/confirm`, {
         method: "POST",
         body: { mpesaReceipt },
       })
@@ -147,7 +133,7 @@ export const useOrdersStore = create<OrdersState>()((set, get) => ({
     const before = get().byId[id]
     if (before) get().upsert({ ...before, status: "rejected", failureReason: reason })
     try {
-      const { order } = await asOwner<OrderResponse>(`/admin/orders/${id}/reject`, {
+      const { order } = await asStaff<OrderResponse>(`/admin/orders/${id}/reject`, {
         method: "POST",
         body: { reason },
       })
