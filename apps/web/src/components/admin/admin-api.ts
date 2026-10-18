@@ -17,15 +17,17 @@ export async function adminFetch<T>(
   path: string,
   { token, method = "GET", body }: { token?: string | null; method?: string; body?: unknown } = {}
 ): Promise<T> {
+  // A Blob (an uploaded photo) goes as-is with its own type; anything else as JSON.
+  const isFile = body instanceof Blob
   let res: Response
   try {
     res = await fetch(`${API_URL}${path}`, {
       method,
       headers: {
-        ...(body === undefined ? {} : { "content-type": "application/json" }),
+        ...(body === undefined ? {} : { "content-type": isFile ? body.type : "application/json" }),
         ...(token ? { authorization: `Bearer ${token}` } : {}),
       },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : isFile ? body : JSON.stringify(body),
     })
   } catch {
     throw new AdminApiError("Can't reach the server. Check your internet connection.", 0)
