@@ -5,8 +5,12 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   images: {
-    // Placeholder stock photos; drop once the client's own images are in /public.
-    remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com" }],
+    remotePatterns: [
+      // Product photos uploaded from the back office (Vercel Blob).
+      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
+      // Placeholder stock photos until the owner replaces them.
+      { protocol: "https", hostname: "images.unsplash.com" },
+    ],
   },
   turbopack: {
     rules: {

@@ -1,8 +1,10 @@
-import Image from "next/image"
+import { ProductImage } from "@/components/product-image"
 import type { LucideIcon } from "lucide-react"
 import type { Product } from "@ndutas/core"
 import { formatPrice } from "@/lib/format"
 import { AddToCart } from "@/components/cart/add-to-cart"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 
 export function MenuSection({
   id,
@@ -44,12 +46,12 @@ function MenuItem({ meal }: { meal: Product }) {
   return (
     <li className="flex items-center gap-4 border-b border-dashed border-foreground/40 pb-5">
       <div className="relative size-16 shrink-0 overflow-hidden rounded-lg">
-        <Image
+        <ProductImage
           src={meal.image}
           alt={meal.name}
           fill
           sizes="64px"
-          className="object-cover"
+          className={cn("object-cover", !meal.available && "opacity-60 grayscale")}
         />
       </div>
       <div className="min-w-0 flex-1">
@@ -60,7 +62,13 @@ function MenuItem({ meal }: { meal: Product }) {
         <p className="font-price text-lg font-medium tabular-nums">
           {formatPrice(meal.price)}
         </p>
-        <AddToCart productId={meal.id} name={meal.name} />
+        {meal.available ? (
+          <AddToCart productId={meal.id} name={meal.name} />
+        ) : (
+          <Badge variant="secondary" className="h-8 rounded-full px-3">
+            Sold out
+          </Badge>
+        )}
       </div>
     </li>
   )

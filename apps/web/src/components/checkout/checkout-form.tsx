@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import Image from "next/image"
+import { ProductImage } from "@/components/product-image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ShoppingBagIcon } from "lucide-react"
@@ -37,7 +37,9 @@ export function CheckoutForm({ payment }: { payment: PaymentSetup }) {
   // Same rules the server applies, so the button only unlocks for details it will accept.
   const nameOk = normaliseCustomerName(name) !== null
   const phoneCheck = checkKenyanPhone(phone)
-  const canPay = nameOk && phoneCheck.ok && !pending
+  // The API refuses sold-out items too; this just explains it before the customer pays.
+  const soldOut = lines.some((line) => !line.product.available)
+  const canPay = nameOk && phoneCheck.ok && !soldOut && !pending
 
   if (!isClient) {
     return <div className="h-96 animate-pulse rounded-2xl bg-muted/60" aria-hidden />
@@ -195,7 +197,9 @@ export function CheckoutForm({ payment }: { payment: PaymentSetup }) {
         </Button>
         {!canPay && !pending && (
           <p id="pay-hint" className="-mt-3 text-center text-sm text-muted-foreground">
-            Enter your name and M-Pesa number to continue.
+            {soldOut
+              ? "Remove the sold-out items from your order to continue."
+              : "Enter your name and M-Pesa number to continue."}
           </p>
         )}
       </form>
@@ -221,7 +225,7 @@ export function CheckoutForm({ payment }: { payment: PaymentSetup }) {
           {lines.map(({ product, quantity, lineTotal }) => (
             <li key={product.id} className="flex gap-3 py-3">
               <div className="relative size-12 shrink-0 overflow-hidden rounded-lg">
-                <Image src={product.image} alt="" fill sizes="48px" className="object-cover" />
+                <ProductImage src={product.image} alt="" fill sizes="48px" className="object-cover" />
               </div>
               <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                 <div className="flex items-start justify-between gap-2">
@@ -230,6 +234,9 @@ export function CheckoutForm({ payment }: { payment: PaymentSetup }) {
                     {formatPrice(lineTotal)}
                   </p>
                 </div>
+                {!product.available && (
+                  <p className="text-xs font-medium text-destructive">Sold out, remove it to check out</p>
+                )}
                 <QuantityStepper
                   name={product.name}
                   quantity={quantity}

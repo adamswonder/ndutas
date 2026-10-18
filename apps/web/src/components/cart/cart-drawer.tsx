@@ -1,6 +1,6 @@
 "use client"
 
-import Image from "next/image"
+import { ProductImage } from "@/components/product-image"
 import Link from "next/link"
 import { ShoppingBagIcon, Trash2Icon } from "lucide-react"
 import { ConfirmDialog } from "@/components/confirm-dialog"
@@ -61,12 +61,15 @@ export function CartDrawer() {
               {lines.map(({ product, quantity, lineTotal }) => (
                 <li key={product.id} className="flex gap-3 py-4">
                   <div className="relative size-16 shrink-0 overflow-hidden rounded-lg">
-                    <Image src={product.image} alt="" fill sizes="64px" className="object-cover" />
+                    <ProductImage src={product.image} alt="" fill sizes="64px" className="object-cover" />
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col gap-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="truncate font-heading font-semibold">{product.name}</p>
+                        {!product.available && (
+                          <p className="text-xs font-medium text-destructive">Sold out, remove it to check out</p>
+                        )}
                         <p className="font-price text-xs text-muted-foreground tabular-nums">
                           {formatPrice(product.price)} each
                         </p>

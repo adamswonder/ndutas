@@ -5,9 +5,10 @@ import { PhotoStrip } from "@/components/landing/photo-strip"
 import { SiteFooter } from "@/components/landing/site-footer"
 import { SiteHeader } from "@/components/landing/site-header"
 import { Testimonials } from "@/components/landing/testimonials"
-import { meals, type MealCategory } from "@ndutas/core"
+import type { MealCategory } from "@ndutas/core"
 import { menuCategories } from "@/lib/categories"
 import { unsplash } from "@/lib/site"
+import { getProducts } from "@/server/api"
 
 const categoryIcons: Record<MealCategory, LucideIcon> = {
   breakfast: CoffeeIcon,
@@ -35,7 +36,8 @@ const kitchenPhotos = [
   { src: unsplash("1504674900247-0877df9cc836"), alt: "A plated meal" },
 ]
 
-export default function Home() {
+export default async function Home() {
+  const meals = await getProducts()
 
   return (
     <div id="top" className="flex flex-1 flex-col">

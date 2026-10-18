@@ -1,13 +1,16 @@
 import "server-only"
 
-import type {
-  ApiError,
-  PaymentSetup,
-  PlaceOrderRequest,
-  PlaceOrderResponse,
-  PublicOrderView,
+import {
+  meals,
+  type ApiError,
+  type PaymentSetup,
+  type PlaceOrderRequest,
+  type PlaceOrderResponse,
+  type Product,
+  type ProductsResponse,
+  type PublicOrderView,
 } from "@ndutas/core"
-import { cacheLife } from "next/cache"
+import { cacheLife, cacheTag } from "next/cache"
 
 // The storefront's only door to orders and payments: the Express API (apps/api).
 // Shapes come from @ndutas/core contracts, so both sides change together.
@@ -62,4 +65,21 @@ export async function getPaymentSetup(): Promise<PaymentSetup> {
   const result = await call<PaymentSetup>("/payment-setup")
   if (!result.ok) throw new Error(result.error.error)
   return result.data
+}
+
+// The menu, cached and tagged "products": the API calls /api/revalidate after any change in
+// the back office, so edits show within seconds. If the API can't be reached (for example
+// during a build with no API running), fall back to the starter menu and retry within
+// minutes. (A shorter lifetime would make the store layout dynamic.) Orders are still
+// re-priced and checked by the API, so a stale menu can never sell at the wrong price.
+export async function getProducts(): Promise<Product[]> {
+  "use cache"
+  cacheTag("products")
+  const result = await call<ProductsResponse>("/products")
+  if (!result.ok) {
+    cacheLife("minutes")
+    return meals
+  }
+  cacheLife("hours")
+  return result.data.products
 }
