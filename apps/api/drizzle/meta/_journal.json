@@ -5,8 +5,22 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1791969482855,
+      "when": 1791981745964,
       "tag": "0000_init",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791982529473,
+      "tag": "0001_products",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791982531871,
+      "tag": "0002_seed_products",
       "breakpoints": true
     }
   ]

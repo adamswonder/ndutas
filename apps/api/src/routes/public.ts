@@ -1,8 +1,10 @@
 import {
   DomainError,
+  toMenuProduct,
   toPublicOrderView,
   type PlaceOrderRequest,
   type PlaceOrderResponse,
+  type ProductsResponse,
   type PaymentSetup,
   type PublicOrderView,
 } from "@ndutas/core"
@@ -16,6 +18,11 @@ export function publicRoutes(container: Container) {
 
   router.get("/health", (_req, res) => {
     res.json({ ok: true })
+  })
+
+  router.get("/products", async (_req, res) => {
+    const products = await container.products.all()
+    res.json({ products: products.map(toMenuProduct) } satisfies ProductsResponse)
   })
 
   router.get("/payment-setup", (_req, res) => {

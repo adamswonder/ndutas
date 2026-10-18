@@ -13,6 +13,7 @@ export class HttpError extends Error {
 
 const statusByCode: Partial<Record<DomainErrorCode, number>> = {
   order_not_found: 404,
+  product_not_found: 404,
   invalid_credentials: 401,
   invalid_transition: 409,
 }
@@ -30,7 +31,11 @@ export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
     return
   }
   // express.json() rejects malformed bodies with a 400 "entity.parse.failed".
-  if (error?.type === "entity.parse.failed" || error?.type === "entity.too.large") {
+  if (error?.type === "entity.too.large") {
+    res.status(413).json({ error: "That is too big to upload. Photos must be under 600 KB." } satisfies ApiError)
+    return
+  }
+  if (error?.type === "entity.parse.failed") {
     res.status(400).json({ error: "Invalid request body." } satisfies ApiError)
     return
   }

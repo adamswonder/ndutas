@@ -1,5 +1,12 @@
-import type { OrderLine, OrderStatus, PaymentInstruction, PaymentMethod } from "@ndutas/core"
-import { index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
+import type {
+  MealCategory,
+  OrderLine,
+  OrderStatus,
+  PaymentInstruction,
+  PaymentMethod,
+  StaffRole,
+} from "@ndutas/core"
+import { boolean, index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
 
 const at = (name: string) => timestamp(name, { withTimezone: true, mode: "date" }).notNull()
 
@@ -30,10 +37,29 @@ export const orders = pgTable(
   ]
 )
 
-export const owners = pgTable("owners", {
+export const staff = pgTable("staff", {
   id: uuid("id").primaryKey(),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
+  role: text("role").$type<StaffRole>().notNull(),
   passwordHash: text("password_hash").notNull(),
   createdAt: at("created_at"),
+  disabledAt: timestamp("disabled_at", { withTimezone: true, mode: "date" }),
 })
+
+export const products = pgTable(
+  "products",
+  {
+    // Readable slugs ("berry-french-toast"): they end up in customers' saved carts.
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    price: integer("price").notNull(),
+    image: text("image").notNull(),
+    category: text("category").$type<MealCategory>().notNull(),
+    available: boolean("available").notNull().default(true),
+    sortOrder: integer("sort_order").notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true, mode: "date" }),
+  },
+  (t) => [index("products_category_sort_idx").on(t.category, t.sortOrder)]
+)

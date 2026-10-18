@@ -1,5 +1,5 @@
 {
-  "id": "aedb8523-1b69-4475-9e8e-078c807c3000",
+  "id": "27f115c3-5bc3-4472-a69d-590a57fde62c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -161,8 +161,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.owners": {
-      "name": "owners",
+    "public.staff": {
+      "name": "staff",
       "schema": "",
       "columns": {
         "id": {
@@ -183,6 +183,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "password_hash": {
           "name": "password_hash",
           "type": "text",
@@ -194,14 +200,20 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true
+        },
+        "disabled_at": {
+          "name": "disabled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "owners_email_unique": {
-          "name": "owners_email_unique",
+        "staff_email_unique": {
+          "name": "staff_email_unique",
           "nullsNotDistinct": false,
           "columns": [
             "email"

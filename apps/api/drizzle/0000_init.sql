@@ -16,13 +16,15 @@ CREATE TABLE "orders" (
 	CONSTRAINT "orders_reference_unique" UNIQUE("reference")
 );
 --> statement-breakpoint
-CREATE TABLE "owners" (
+CREATE TABLE "staff" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"email" text NOT NULL,
 	"name" text NOT NULL,
+	"role" text NOT NULL,
 	"password_hash" text NOT NULL,
 	"created_at" timestamp with time zone NOT NULL,
-	CONSTRAINT "owners_email_unique" UNIQUE("email")
+	"disabled_at" timestamp with time zone,
+	CONSTRAINT "staff_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
 CREATE INDEX "orders_status_created_at_idx" ON "orders" USING btree ("status","created_at");--> statement-breakpoint
