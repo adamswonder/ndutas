@@ -1,5 +1,5 @@
 import { createServer } from "node:http"
-import { createApp } from "./app.js"
+import { createApp } from "./express-app.js"
 import type { Config } from "./config.js"
 import type { Container } from "./container.js"
 import { attachOrderSockets } from "./realtime/socket-hub.js"

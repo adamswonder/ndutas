@@ -1,3 +1,5 @@
+// The Express app (routes, CORS, errors). Not named app.ts on purpose: Vercel's Express
+// preset looks for app.* before server.*, and the entry point must be src/server.ts.
 import cors from "cors"
 import express from "express"
 import type { Config } from "./config.js"
