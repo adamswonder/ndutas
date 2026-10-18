@@ -1,7 +1,8 @@
-// The Express app (routes, CORS, errors). Not named app.ts on purpose: Vercel's Express
-// preset looks for app.* before server.*, and the entry point must be src/server.ts.
+// The API's routes, CORS and error handling, attached to an Express app.
+// Not named app.ts on purpose: Vercel's Express preset looks for app.* before server.*,
+// and the entry point must be src/server.ts (which must also import express itself).
 import cors from "cors"
-import express from "express"
+import express, { type Express } from "express"
 import type { Config } from "./config.js"
 import type { Container } from "./container.js"
 import { errorHandler, HttpError } from "./errors.js"
@@ -10,7 +11,10 @@ import { publicRoutes } from "./routes/public.js"
 import { LocalImageStore } from "./uploads.js"
 
 export function createApp(container: Container, config: Config) {
-  const app = express()
+  return configureApp(express(), container, config)
+}
+
+export function configureApp(app: Express, container: Container, config: Config) {
   app.disable("x-powered-by")
   app.set("trust proxy", true)
   app.use(express.json({ limit: "20kb" }))
