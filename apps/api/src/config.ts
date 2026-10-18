@@ -7,9 +7,19 @@ export type Config = {
   // Neon: pooled URL for queries, direct (unpooled) URL for LISTEN/NOTIFY.
   databaseUrl?: string
   databaseUrlUnpooled?: string
+  // Without DATABASE_URL: where the local PGlite database lives ("memory://" for tests).
+  localDataDir: string
   payment:
     | { method: "manual"; payTo: string; payToName: string }
     | { method: "stk" }
+  // Where to tell the storefront that the menu changed (its /api/revalidate route).
+  webRevalidateUrl?: string
+  revalidateSecret?: string
+  // Product photo uploads: Vercel Blob when the token is set, otherwise a local folder that the
+  // API serves itself (publicUrl is how browsers reach this API).
+  blobToken?: string
+  localUploadsDir: string
+  publicUrl: string
   // Local development without a database: seed one back office login.
   devOwner?: { email: string; password: string; name: string }
 }
@@ -22,6 +32,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   if (!jwtSecret || jwtSecret.length < 32) {
     throw new Error("JWT_SECRET must be set to at least 32 characters.")
   }
+  if (production && !env.DATABASE_URL) {
+    throw new Error("DATABASE_URL must be set in production.")
+  }
 
   return {
     port: Number(env.PORT || 4000),
@@ -32,6 +45,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     jwtSecret: new TextEncoder().encode(jwtSecret),
     databaseUrl: env.DATABASE_URL || undefined,
     databaseUrlUnpooled: env.DATABASE_URL_UNPOOLED || env.DATABASE_URL || undefined,
+    localDataDir: env.LOCAL_DB_DIR || ".data/pglite",
+    webRevalidateUrl: env.WEB_REVALIDATE_URL || undefined,
+    blobToken: env.BLOB_READ_WRITE_TOKEN || undefined,
+    localUploadsDir: env.LOCAL_UPLOADS_DIR || ".data/uploads",
+    publicUrl: (env.PUBLIC_API_URL || `http://localhost:${env.PORT || 4000}`).replace(/\/$/, ""),
+    revalidateSecret: env.REVALIDATE_SECRET || undefined,
     // Pochi la Biashara until the client has a Till/Paybill; then set PAYMENT_METHOD=stk.
     payment:
       env.PAYMENT_METHOD === "stk"

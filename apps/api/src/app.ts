@@ -5,6 +5,7 @@ import type { Container } from "./container.js"
 import { errorHandler, HttpError } from "./errors.js"
 import { adminRoutes } from "./routes/admin.js"
 import { publicRoutes } from "./routes/public.js"
+import { LocalImageStore } from "./uploads.js"
 
 export function createApp(container: Container, config: Config) {
   const app = express()
@@ -13,6 +14,10 @@ export function createApp(container: Container, config: Config) {
   app.use(express.json({ limit: "20kb" }))
 
   app.use(publicRoutes(container))
+  // Locally uploaded product photos (production uses Vercel Blob URLs instead).
+  if (container.images instanceof LocalImageStore) {
+    app.use("/uploads", express.static(container.images.dir, { immutable: true, maxAge: "365d" }))
+  }
   // Only the back office runs in a browser, so only it needs CORS.
   app.use(
     "/admin",
