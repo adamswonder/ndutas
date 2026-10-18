@@ -19,6 +19,7 @@ import { CUSTOMER_NAME_MAX, normaliseCustomerName } from "@ndutas/core"
 import { checkKenyanPhone } from "@ndutas/core"
 import { formatPrice } from "@/lib/format"
 import { formatPhoneInput } from "@/lib/phone-input"
+import { CheckoutLoading } from "./checkout-loading"
 import { PochiDialog } from "./pochi-dialog"
 
 export function CheckoutForm({ payment }: { payment: PaymentSetup }) {
@@ -42,7 +43,7 @@ export function CheckoutForm({ payment }: { payment: PaymentSetup }) {
   const canPay = nameOk && phoneCheck.ok && !soldOut && !pending
 
   if (!isClient) {
-    return <div className="h-96 animate-pulse rounded-2xl bg-muted/60" aria-hidden />
+    return <CheckoutLoading />
   }
 
   // Only while the redirect is in flight. With cacheComponents, Next keeps this

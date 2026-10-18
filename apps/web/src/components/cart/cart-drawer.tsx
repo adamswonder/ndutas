@@ -1,8 +1,11 @@
 "use client"
 
-import { ProductImage } from "@/components/product-image"
-import Link from "next/link"
+import * as React from "react"
+import Link, { useLinkStatus } from "next/link"
+import { usePathname } from "next/navigation"
 import { ShoppingBagIcon, Trash2Icon } from "lucide-react"
+import { ProductImage } from "@/components/product-image"
+import { SpinnerCustom } from "@/components/spinner-custom"
 import { ConfirmDialog } from "@/components/confirm-dialog"
 import { Button } from "@/components/ui/button"
 import {
@@ -23,6 +26,13 @@ export function CartDrawer() {
   const cart = useCart()
   const isDesktop = useMediaQuery("(min-width: 768px)")
   const { lines, itemCount, subtotal } = cart.priced
+  const pathname = usePathname()
+  const { setOpen } = cart
+
+  // Close once a link from the drawer (Checkout, Browse menu) has actually navigated.
+  React.useEffect(() => {
+    setOpen(false)
+  }, [pathname, setOpen])
 
   return (
     <Drawer
@@ -111,11 +121,13 @@ export function CartDrawer() {
                     Buy More
                   </Button>
                 </DrawerClose>
-                <DrawerClose asChild>
-                  <Button asChild size="lg" className="h-11 rounded-full">
-                    <Link href="/checkout">Checkout</Link>
-                  </Button>
-                </DrawerClose>
+                {/* Not a DrawerClose: the drawer stays open (with a spinner on this button)
+                    until the checkout page has loaded, then closes on the route change. */}
+                <Button asChild size="lg" className="h-11 rounded-full">
+                  <Link href="/checkout">
+                    <CheckoutLabel />
+                  </Link>
+                </Button>
               </div>
             </DrawerFooter>
           </>
@@ -143,5 +155,18 @@ function ClearCartButton({ onConfirm }: { onConfirm: () => void }) {
       confirmLabel="Clear cart"
       onConfirm={onConfirm}
     />
+  )
+}
+
+// Inside the Checkout <Link>: useLinkStatus reports while that navigation is still loading.
+function CheckoutLabel() {
+  const { pending } = useLinkStatus()
+  return pending ? (
+    <>
+      <SpinnerCustom data-icon="inline-start" />
+      Opening checkout…
+    </>
+  ) : (
+    "Checkout"
   )
 }

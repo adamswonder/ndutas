@@ -5,6 +5,7 @@ import Link from "next/link"
 import { ArrowLeftIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CheckoutForm } from "@/components/checkout/checkout-form"
+import { CheckoutLoading } from "@/components/checkout/checkout-loading"
 import { SiteHeader } from "@/components/landing/site-header"
 import { getPaymentSetup } from "@/server/api"
 
@@ -26,7 +27,7 @@ export default function CheckoutPage() {
           Confirm your order, then pay with M-Pesa.
         </p>
         <div className="mt-8">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-2xl bg-muted/60" aria-hidden />}>
+          <Suspense fallback={<CheckoutLoading />}>
             <Checkout />
           </Suspense>
         </div>
