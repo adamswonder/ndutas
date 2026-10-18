@@ -1,4 +1,6 @@
 // Applies the SQL in ./drizzle to the database in DATABASE_URL: `pnpm --filter @ndutas/api db:migrate`.
+// Add `--production` to migrate the live database instead (see target-database.ts).
+import { target } from "./target-database.js"
 import { neon } from "@neondatabase/serverless"
 import { drizzle } from "drizzle-orm/neon-http"
 import { migrate } from "drizzle-orm/neon-http/migrator"
@@ -10,4 +12,4 @@ if (!url) {
 }
 
 await migrate(drizzle(neon(url)), { migrationsFolder: "./drizzle" })
-console.log("Migrations applied.")
+console.log(`Migrations applied to ${target}.`)

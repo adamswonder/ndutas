@@ -1,14 +1,26 @@
 // Creates a back office login: `pnpm --filter @ndutas/api staff:create`.
+// Add `--production` (after `--`) to create it on the live database instead.
 // Uses Neon when DATABASE_URL is set, otherwise the local PGlite database.
 // Prompts for the details so the password never lands in shell history.
+import { target } from "./target-database.js"
 import { createInterface } from "node:readline/promises"
 import { isDomainError, type StaffRole } from "@ndutas/core"
 import { loadConfig } from "../src/config.js"
 import { buildContainer } from "../src/container.js"
 import { connectDatabase } from "../src/db/connect.js"
 
+// The questions need a keyboard. Without one (CI, or a tool running the command for you)
+// readline never gets an answer and Node exits with a confusing "unsettled top-level await".
+if (!process.stdin.isTTY) {
+  console.error(
+    "staff:create asks for a password, so run it in your own terminal window:\n" +
+      "  pnpm --filter @ndutas/api staff:create"
+  )
+  process.exit(1)
+}
+
 const config = loadConfig()
-console.log(`Creating a back office login in ${config.databaseUrl ? "Neon" : `local PGlite (${config.localDataDir})`}.`)
+console.log(`Creating a back office login in ${config.databaseUrl ? target : `local PGlite (${config.localDataDir})`}.`)
 
 const rl = createInterface({ input: process.stdin, output: process.stdout })
 const email = await rl.question("Email: ")
